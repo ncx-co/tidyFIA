@@ -1,0 +1,51 @@
+---
+title: "Using the tidyFIA package"
+author: "Brian Clough"
+date: "11/7/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  comment = NA,
+  message = FALSE,
+  warning = FALSE,
+  eval = if (isTRUE(exists("params"))) params$EVAL else FALSE,
+  dev = "png",
+  dpi = 150,
+  fig.asp = 0.8,
+  fig.width = 5,
+  out.width = "60%",
+  fig.align = "center"
+)
+library(tidyverse)
+library(sf)
+library(tidyFIA)
+ggplot2::theme_set(theme_bw())
+```
+
+This vignette demonstrates the basic use of the tidyFIA package. The core function is `tidy_fia()`, which queries the FIA database by a single state abbreviation, a string of state abbreviations, or a polygonal area of interest supplied as an `sf` object. In this example, we will use tidyFIA to extract recent FIA data for the Adirondack & Green Mountains ecological supersection, which spans the states of New York and Vermont in the northeastern US. 
+
+First we will download the supersection shapefile and create an `aoi` to pass to tidyFIA.
+
+```{r supersection, include=TRUE}
+
+# Download master shapefile
+download.file(
+  url = "https://www.arb.ca.gov/cc/capandtrade/protocols/usforest/2014/supersectionshapefiles/gis-supersection-shape-file.zip",
+  destfile = "/tmp/gis-supersection-shape-file.zip"
+)
+
+unzip(zipfile = "/tmp/gis-supersection-shape-file.zip", exdir = "/tmp/super")
+superFile <- "/tmp/super/Supersections/Supersections.shp"
+
+# import and reproject to EPSG:4326
+supersectionShape <- st_read(dsn = superFile) %>%
+    st_transform(crs = 4326) %>%
+    select(SSection, geometry)
+
+# filter
+ecoreg <- supersectionShape %>% 
+    filter(SSection == 'Adirondacks & Green Mountains')
+
+```
