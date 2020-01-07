@@ -135,6 +135,21 @@ stack_tables <- function(table_name, fia_db_files) {
     )
 }
 
+
+#' @title Read FIA reference table
+#'
+#' @param table_name name of reference table e.g. "REF_SPECIES"
+#'
+#' @return dataframe of reference table
+#' @export
+
+read_ref_table <- function(table) {
+  url <- glue::glue(
+    "https://apps.fs.usda.gov/fia/datamart/CSV/{table}.csv"
+  )
+  vroom::vroom(url, delim = ",")
+}
+
 #' @title Plot method for `tidyFIA` class
 #' @author Henry Rodman
 #' @param x object of class `tidyFIA` (output from `tidy_fia`)

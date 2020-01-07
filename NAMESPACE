@@ -2,6 +2,7 @@
 
 S3method(plot,tidyFIA)
 export(download_by_state)
+export(read_ref_table)
 export(tidy_fia)
 import(ggplot2)
 importFrom(magrittr,"%>%")
