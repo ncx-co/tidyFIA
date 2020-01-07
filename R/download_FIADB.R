@@ -67,10 +67,10 @@ download_and_unzip <- function(url, file_dir) {
   )
 
   if (!file.exists(zip_file)) {
-    download.file(url, destfile = zip_file)
+    utils::download.file(url, destfile = zip_file)
   }
 
-  unzip(
+  utils::unzip(
     zipfile = zip_file,
     exdir = file_dir
   )
