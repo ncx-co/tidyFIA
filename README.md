@@ -1,4 +1,4 @@
-# tidyFIA
+# tidyFIA <a href='https://silviaterra.com'><img src='man/figures/logo.png' align="right" height="139" /></a>
 
 ## Install
 At this time you must install the `tidyFIA` package via GitHub.
