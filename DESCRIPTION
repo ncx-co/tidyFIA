@@ -1,17 +1,30 @@
 Package: tidyFIA
-Title: What the Package Does (One Line, Title Case)
+Title: Assemble Forest Inventory and Analaysis (FIA) Data for Analysis
 Version: 0.10
 Authors@R: c(
-    person("Clough", "Brian", "brian@silviaterra.com", c("aut", "cre")),
+    person("Clough", "Brian", , email = "brian@silviaterra.com", c("aut", "cre")),
     person("Rodman", "Henry", role = "aut"),
     person("SilviaTerra", role = c("cph", "fnd"))
     )
-Description: What the package does (one paragraph).
+Description: A simple user interface for downloading and importing FIA data from
+    FIADB (https://apps.fs.usda.gov/fia/datamart/CSV/datamart_csv.html) into R
+    for analysis.
+URL: https://github.com/SilviaTerra/tidyFIA
 License: MIT + file LICENSE
+VignetteBuilder: knitr
 Encoding: UTF-8
 LazyData: true
 Imports:
     dplyr,
+    ggplot2,
     glue,
+    magrittr,
     purrr,
+    sf,
+    spData,
+    tidyr,
     vroom
+Suggests:
+    knitr,
+    testthat
+RoxygenNote: 6.1.1
