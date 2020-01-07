@@ -1,6 +1,5 @@
 Package: tidyFIA
 Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
 Version: 0.10
 Authors@R: c(
     person("Clough", "Brian", "brian@silviaterra.com", c("aut", "cre")),
