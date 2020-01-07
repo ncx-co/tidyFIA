@@ -34,9 +34,9 @@ download_by_state <- function(state, file_dir = tempdir(),
     stop("there was an error downloading files")
   }
 
-  names(out_files) <- files
+  names(downloaded_files) <- files
 
-  return(out_files)
+  return(downloaded_files)
 }
 
 #' @title download and unzip file from web
