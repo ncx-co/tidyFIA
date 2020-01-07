@@ -8,6 +8,6 @@ Authors@R: c(
     person("SilviaTerra", role = c("cph", "fnd"))
     )
 Description: What the package does (one paragraph).
-License: What license it uses
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
