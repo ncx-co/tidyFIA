@@ -1,1 +1,5 @@
 .Rproj.user
+.Rhistory
+.Rbuildignore
+.DS_Store
+tidyFIA.Rproj
