@@ -30,10 +30,6 @@ download_by_state <- function(state, file_dir = tempdir(),
     .f = ~ download_and_unzip(url = .x, file_dir = file_dir)
   )
 
-  if (!all(local_files %in% unlist(downloaded_files))) {
-    stop("there was an error downloading files")
-  }
-
   names(downloaded_files) <- files
 
   return(downloaded_files)
