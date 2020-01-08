@@ -23,11 +23,14 @@ knitr::opts_chunk$set(
 )
 ```
 
-This vignette demonstrates the basic use of the tidyFIA package. The core function is `tidy_fia()`, which queries the FIA database by a single state abbreviation, a string of state abbreviations, or a polygonal area of interest supplied as an `sf` object. In this example, we will use {tidyFIA} to extract recent FIA data for the Adirondack & Green Mountains ecological supersection, which spans the states of New York and Vermont in the northeastern US. 
+This vignette demonstrates the basic use of the tidyFIA package. The core function is `tidy_fia()`, which queries the FIA database by a single state abbreviation, a string of state abbreviations, or a polygonal area of interest supplied as an `sf` object. In this example, we will use {tidyFIA} to extract recent FIA data for the Adirondack & Green Mountains ecological supersection, which spans the states of New York and Vermont in the northeastern US.
 
 ```{r libs}
-library(tidyverse)
+library(dplyr)
+library(ggplot2)
 library(sf)
+library(tidyr)
+
 library(tidyFIA)
 
 ggplot2::theme_set(theme_bw())
@@ -51,7 +54,7 @@ download.file(
 )
 
 unzip(
-  zipfile = super_zip, 
+  zipfile = super_zip,
   exdir = tempdir()
 )
 
@@ -127,12 +130,7 @@ plot_stats <- fia_data[["TREE"]] %>%
   full_join(
     fia_data[["PLOT"]] %>% select(CN, plot_loc_id, INVYR),
     by = c("PLT_CN" = "CN")
-  ) %>%
-  left_join(
-    fia_data[["plot_locs"]],
-    by = "plot_loc_id"
-  ) %>%
-  replace_na(replace = list(bapa = 0, tpa = 0, qmd = 0))
+  )
 ```
 
 The plot-level attributes could be displayed using histograms. In this example, we are looking at the distribution of basal area per acre, trees per acre, and quadratic mean diameter in plots measured in 2014 or later.
@@ -145,6 +143,11 @@ plot_stats %>%
     names_to = "attribute",
     values_to = "value"
   ) %>%
+  left_join(
+    fia_data[["plot_locs"]],
+    by = "plot_loc_id"
+  ) %>%
+  replace_na(replace = list(bapa = 0, tpa = 0, qmd = 0)) %>%
   ggplot(aes(x = value)) +
   geom_histogram() +
   facet_wrap(~ attribute, scales = "free")
