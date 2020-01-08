@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
   dpi = 150,
   fig.asp = 0.8,
   fig.width = 5,
-  out.width = "60%",
+  out.width = "90%",
   fig.align = "center"
 )
 ```
@@ -102,6 +102,10 @@ p +
 ### Tree data
 The 'TREE' table will be stored as an element in the list: `fia_data[["tree]]`. This table can be used to explore tree-level attributes such as height:diameter relationships among species.
 ```{r trees, include = TRUE}
+# get REF_SPECIES tables
+ref_species <- read_ref_table("REF_SPECIES") %>%
+  select(SPCD, COMMON_NAME)
+
 # most common species
 common_spp <- fia_data[["TREE"]] %>%
   group_by(SPCD) %>%
@@ -111,9 +115,10 @@ common_spp <- fia_data[["TREE"]] %>%
 
 fia_data[["TREE"]] %>%
   filter(SPCD %in% common_spp) %>%
+  left_join(ref_species) %>%
   ggplot(aes(x = DIA, y = HT)) +
     geom_point(alpha = 0.2) +
-    facet_wrap(~ SPCD)
+    facet_wrap(~ COMMON_NAME)
 
 ```
 
@@ -130,7 +135,8 @@ plot_stats <- fia_data[["TREE"]] %>%
   full_join(
     fia_data[["PLOT"]] %>% select(CN, plot_loc_id, INVYR),
     by = c("PLT_CN" = "CN")
-  )
+  ) %>%
+  replace_na(replace = list(bapa = 0, tpa = 0, qmd = 0))
 ```
 
 The plot-level attributes could be displayed using histograms. In this example, we are looking at the distribution of basal area per acre, trees per acre, and quadratic mean diameter in plots measured in 2014 or later.
@@ -143,18 +149,13 @@ plot_stats %>%
     names_to = "attribute",
     values_to = "value"
   ) %>%
-  left_join(
-    fia_data[["plot_locs"]],
-    by = "plot_loc_id"
-  ) %>%
-  replace_na(replace = list(bapa = 0, tpa = 0, qmd = 0)) %>%
   ggplot(aes(x = value)) +
   geom_histogram() +
   facet_wrap(~ attribute, scales = "free")
 
 ```
 
-Distributions of plot-level observations can be plotted with repsect to time (INVYR).
+Distributions of plot-level observations can be plotted with respect to time (INVYR).
 
 ```{r time}
 plot_stats %>%
@@ -172,6 +173,12 @@ plot_stats %>%
 
 You may also be interested in plotting observations spatially.
 ```{r qmd_map}
+plot_stats_spatial <- plot_stats %>%
+  left_join(
+    fia_data[["plot_locs"]],
+    by = "plot_loc_id"
+  )
+
 ggplot() +
   geom_sf(
     data = nearby_states,
@@ -184,7 +191,8 @@ ggplot() +
     alpha = 0
   ) +
   geom_sf(
-    data = plot_stats,
+    data = plot_stats_spatial %>% arrange(qmd),
     aes(color = qmd, geometry = geometry)
-  )
+  ) +
+  scale_color_gradientn(colors = terrain.colors(10))
 ```
