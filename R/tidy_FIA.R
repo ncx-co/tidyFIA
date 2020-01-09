@@ -32,7 +32,7 @@ tidy_fia <- function(states = NULL, aoi = NULL,
   # download tables
   fia_db_files <- purrr::map(
     .x = states,
-    .f = ~ download_by_state(state = .x)
+    .f = ~ download_by_state(state = .x, files = files)
   )
 
   # combine tables
