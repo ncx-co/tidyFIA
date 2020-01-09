@@ -1,8 +1,11 @@
 ---
 title: "Using the tidyFIA package"
-author: "Brian Clough"
-date: "11/7/2019"
-output: html_document
+author: "Brian Clough & Henry Rodman"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Using the tidyFIA package}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
 ---
 
 ```{r setup, include=FALSE}
@@ -10,42 +13,186 @@ knitr::opts_chunk$set(
   comment = NA,
   message = FALSE,
   warning = FALSE,
-  eval = if (isTRUE(exists("params"))) params$EVAL else FALSE,
+  eval = TRUE,
   dev = "png",
   dpi = 150,
   fig.asp = 0.8,
   fig.width = 5,
-  out.width = "60%",
+  out.width = "90%",
   fig.align = "center"
 )
-library(tidyverse)
-library(sf)
-library(tidyFIA)
-ggplot2::theme_set(theme_bw())
 ```
 
-This vignette demonstrates the basic use of the tidyFIA package. The core function is `tidy_fia()`, which queries the FIA database by a single state abbreviation, a string of state abbreviations, or a polygonal area of interest supplied as an `sf` object. In this example, we will use tidyFIA to extract recent FIA data for the Adirondack & Green Mountains ecological supersection, which spans the states of New York and Vermont in the northeastern US. 
+This vignette demonstrates the basic use of the tidyFIA package. The core function is `tidy_fia()`, which queries the FIA database by a single state abbreviation, a string of state abbreviations, or a polygonal area of interest supplied as an `sf` object. In this example, we will use {tidyFIA} to extract recent FIA data for the Adirondack & Green Mountains ecological supersection, which spans the states of New York and Vermont in the northeastern US.
+
+```{r libs}
+library(dplyr)
+library(ggplot2)
+library(sf)
+library(tidyr)
+
+library(tidyFIA)
+
+ggplot2::theme_set(theme_bw())
+```
 
 First we will download the supersection shapefile and create an `aoi` to pass to tidyFIA.
 
 ```{r supersection, include=TRUE}
 
 # Download master shapefile
-download.file(
-  url = "https://www.arb.ca.gov/cc/capandtrade/protocols/usforest/2014/supersectionshapefiles/gis-supersection-shape-file.zip",
-  destfile = "/tmp/gis-supersection-shape-file.zip"
+super_zip <- file.path(
+  tempdir(),
+  "gis-supersection-shape-file.zip"
 )
 
-unzip(zipfile = "/tmp/gis-supersection-shape-file.zip", exdir = "/tmp/super")
-superFile <- "/tmp/super/Supersections/Supersections.shp"
+super_url <- "https://www.arb.ca.gov/cc/capandtrade/protocols/usforest/2014/supersectionshapefiles/gis-supersection-shape-file.zip"
+
+download.file(
+  url = super_url,
+  destfile = super_zip
+)
+
+unzip(
+  zipfile = super_zip,
+  exdir = tempdir()
+)
+
+super_file <- file.path(tempdir(), "Supersections/Supersections.shp")
 
 # import and reproject to EPSG:4326
-supersectionShape <- st_read(dsn = superFile) %>%
-    st_transform(crs = 4326) %>%
-    select(SSection, geometry)
+supersectionShape <- st_read(dsn = super_file) %>%
+  st_transform(crs = 4326) %>%
+  select(SSection, geometry)
 
 # filter
-ecoreg <- supersectionShape %>% 
-    filter(SSection == 'Adirondacks & Green Mountains')
+ecoreg <- supersectionShape %>%
+  filter(SSection == "Adirondacks & Green Mountains")
 
+```
+
+The function `tidy_fia` will download the relevant FIA csv tables from [FIADB](https://apps.fs.usda.gov/fia/datamart/CSV/datamart_csv.html) then filter down the plots to the points within the `aoi`. The `files` argument can be used to specify which FIADB tables from the "Index of Tables" in the [FIADB User Guide](https://www.fia.fs.fed.us/library/database-documentation/current/ver80/FIADB%20User%20Guide%20P2_8-0.pdf) you would like to download. The imported tables are returned as a list of dataframes.
+
+```{r tidy_fia}
+fia_data <- tidy_fia(
+  aoi = ecoreg,
+  files = c("PLOT", "TREE", "SUBPLOT", "COND")
+)
+```
+
+A simple map of the plot locations can be printed by calling `plot(fia_data)`. The `plot` method for the `tidyFIA` class will generate a {ggplot2} map that can be added to other plot elements such as some nearby state boundaries to add geographic context.
+
+```{r map, include = TRUE}
+p <- plot(fia_data)
+
+nearby_states <- spData::us_states %>%
+  st_transform(st_crs(ecoreg)) %>%
+  st_join(ecoreg) %>%
+  filter(!is.na(SSection))
+
+p +
+  geom_sf(
+    data = nearby_states,
+    color = "blue",
+    alpha = 0
+  )
+
+```
+
+### Tree data
+The 'TREE' table will be stored as an element in the list: `fia_data[["tree]]`. This table can be used to explore tree-level attributes such as height:diameter relationships among species.
+```{r trees, include = TRUE}
+# get REF_SPECIES tables
+ref_species <- read_ref_table("REF_SPECIES") %>%
+  select(SPCD, COMMON_NAME)
+
+# most common species
+common_spp <- fia_data[["TREE"]] %>%
+  group_by(SPCD) %>%
+  tally %>%
+  top_n(9, wt = n) %>%
+  pull(SPCD)
+
+fia_data[["TREE"]] %>%
+  filter(SPCD %in% common_spp) %>%
+  left_join(ref_species) %>%
+  ggplot(aes(x = DIA, y = HT)) +
+    geom_point(alpha = 0.2) +
+    facet_wrap(~ COMMON_NAME)
+
+```
+
+### Plot attributes
+The tree-level data in the 'TREE' table can be summarized to obtain plot-level summaries.
+```{r plot_attributes, include = TRUE}
+plot_stats <- fia_data[["TREE"]] %>%
+  group_by(PLT_CN) %>%
+  summarize(
+    bapa = sum(TPA_UNADJ * 0.005454 * DIA ^ 2, na.rm = TRUE),
+    tpa = sum(TPA_UNADJ, na.rm = TRUE),
+    qmd = sqrt(bapa / tpa / 0.005454)
+  ) %>%
+  full_join(
+    fia_data[["PLOT"]] %>% select(CN, plot_loc_id, INVYR),
+    by = c("PLT_CN" = "CN")
+  ) %>%
+  replace_na(replace = list(bapa = 0, tpa = 0, qmd = 0))
+```
+
+The plot-level attributes could be displayed using histograms. In this example, we are looking at the distribution of basal area per acre, trees per acre, and quadratic mean diameter in plots measured in 2014 or later.
+
+```{r histograms, include = TRUE}
+plot_stats %>%
+  filter(INVYR >= 2014) %>%
+  pivot_longer(
+    cols = c("bapa", "tpa", "qmd"),
+    names_to = "attribute",
+    values_to = "value"
+  ) %>%
+  ggplot(aes(x = value)) +
+  geom_histogram() +
+  facet_wrap(~ attribute, scales = "free")
+
+```
+
+Distributions of plot-level observations can be plotted with respect to time (INVYR).
+
+```{r time}
+plot_stats %>%
+  pivot_longer(
+    cols = c("bapa", "tpa", "qmd"),
+    names_to = "attribute",
+    values_to = "value"
+  ) %>%
+  ggplot(aes(x = INVYR, y = value)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth() +
+  facet_wrap(~ attribute, scales = "free")
+
+```
+
+You may also be interested in plotting observations spatially.
+```{r qmd_map}
+plot_stats_spatial <- plot_stats %>%
+  left_join(
+    fia_data[["plot_locs"]],
+    by = "plot_loc_id"
+  )
+
+ggplot() +
+  geom_sf(
+    data = nearby_states,
+    color = "blue",
+    alpha = 0
+  ) +
+  geom_sf(
+    data = ecoreg,
+    color = "black",
+    alpha = 0
+  ) +
+  geom_sf(
+    data = plot_stats_spatial %>% arrange(qmd),
+    aes(color = qmd, geometry = geometry)
+  ) +
+  scale_color_gradientn(colors = terrain.colors(10))
 ```
