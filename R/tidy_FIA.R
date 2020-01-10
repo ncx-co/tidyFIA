@@ -11,6 +11,7 @@
 #' @return a list object containing tidy data
 #' @author Henry Rodman, Brian Clough
 #' @importFrom magrittr %>%
+#' @importFrom rlang .data
 #' @export
 
 tidy_fia <- function(states = NULL, aoi = NULL,
@@ -24,9 +25,9 @@ tidy_fia <- function(states = NULL, aoi = NULL,
       sf::st_transform(sf::st_crs(aoi)) %>%
       sf::st_intersection(aoi) %>%
       dplyr::mutate(
-        ABB = state.abb[match(NAME, state.name)]
+        !! "ABB" := datasets::state.abb[match(.data[["NAME"]], datasets::state.name)]
       ) %>%
-      dplyr::pull(ABB)
+      dplyr::pull(.data[["ABB"]])
   }
 
   # download tables
@@ -48,8 +49,8 @@ tidy_fia <- function(states = NULL, aoi = NULL,
   # uniquely identify plots by location
   tables[["plot_locs"]] <- tables[["PLOT"]] %>%
     dplyr::select(
-      STATECD, UNITCD, COUNTYCD, PLOT,
-      LAT, LON, ELEV
+      .data[["STATECD"]], .data[["UNITCD"]], .data[["COUNTYCD"]], .data[["PLOT"]],
+      .data[["LAT"]], .data[["LON"]], .data[["ELEV"]]
     ) %>%
     dplyr::distinct() %>%
     tidyr::unite(
@@ -78,16 +79,22 @@ tidy_fia <- function(states = NULL, aoi = NULL,
       sf::st_intersection(sf::st_transform(aoi, 4326))
 
     tables[["PLOT"]] <- tables[["PLOT"]] %>%
-      dplyr::filter(plot_loc_id %in% tables[["plot_locs"]][["plot_loc_id"]])
+      dplyr::filter(
+        .data[["plot_loc_id"]] %in% tables[["plot_locs"]][["plot_loc_id"]]
+      )
 
     # filter all other tables to CNs in geographically filtered plots
     for (file in files) {
       if ("PLT_CN" %in% names(tables[[file]])) {
         tables[[file]] <- tables[[file]] %>%
-          dplyr::filter(PLT_CN %in% tables[["PLOT"]][["CN"]])
+          dplyr::filter(
+            .data[["PLT_CN"]] %in% tables[["PLOT"]][["CN"]]
+          )
       } else {
         tables[[file]] <- tables[[file]] %>%
-          dplyr::filter(CN %in% tables[["PLOT"]][["CN"]])
+          dplyr::filter(
+            .data[["CN"]] %in% tables[["PLOT"]][["CN"]]
+          )
       }
     }
   }
@@ -96,9 +103,9 @@ tidy_fia <- function(states = NULL, aoi = NULL,
   if (is.null(aoi)) {
     aoi <- spData::us_states %>%
       dplyr::mutate(
-        ABB = state.abb[match(NAME, state.name)]
+        !! "ABB" := datasets::state.abb[match(.data[["NAME"]], datasets::state.name)]
       ) %>%
-      dplyr::filter(ABB %in% states)
+      dplyr::filter(.data[["ABB"]] %in% states)
   }
 
   tables[["aoi"]] <- aoi
@@ -143,9 +150,9 @@ stack_tables <- function(table_name, fia_db_files) {
 #' @return dataframe of reference table
 #' @export
 
-read_ref_table <- function(table) {
+read_ref_table <- function(table_name) {
   url <- glue::glue(
-    "https://apps.fs.usda.gov/fia/datamart/CSV/{table}.csv"
+    "https://apps.fs.usda.gov/fia/datamart/CSV/{table_name}.csv"
   )
   vroom::vroom(url, delim = ",")
 }
