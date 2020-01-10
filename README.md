@@ -11,7 +11,18 @@ The main function is `tidy_fia` which will download and import the specified tab
 
 To get started you can simply run this example command to get the FIA tables for the state of Minnesota:
 ```r
-tidyFIA::tidy_fia(
+mn_data <- tidyFIA::tidy_fia(
   states = "MN"
 )
+```
+
+The example will download these tables by default:
+`"PLOT", "SUBPLOT", "COND", "TREE", "SURVEY"`
+
+Each table is an element in the list `mn_data`.
+To use one of the tables you call them like this:
+```r
+mn_data[["PLOT"]]
+mn_data[["TREE"]]
+...
 ```
