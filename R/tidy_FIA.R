@@ -57,6 +57,7 @@ tidy_fia <- function(states = NULL, aoi = NULL,
       c("STATECD", "UNITCD", "COUNTYCD", "PLOT"),
       sep = "_"
     ) %>%
+    dplyr::filter(!is.na(LAT)) %>%
     sf::st_as_sf(
       coords = c("LON", "LAT"),
       crs = 4326,
@@ -70,6 +71,13 @@ tidy_fia <- function(states = NULL, aoi = NULL,
       sep = "_",
       remove = FALSE
     )
+
+  if(length(tables[["plot_locs"]]$plot_loc_id) !=
+     length(tables[["PLOT"]]$plot_loc_id)){
+       warning('The assembled PLOT table has some NA LAT/LON values. Filter by unique
+                values of plot_locs$plot_loc_id if you wish to drop these.')
+     }
+
 
   # clip to aoi if applicable
   if (!is.null(aoi)) {
