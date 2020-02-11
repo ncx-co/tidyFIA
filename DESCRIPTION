@@ -1,9 +1,9 @@
 Package: tidyFIA
-Title: Assemble Forest Inventory and Analaysis (FIA) Data for Analysis
+Title: Assemble Forest Inventory and Analysis (FIA) Data for Analysis
 Version: 0.10
 Authors@R: c(
-    person("Clough", "Brian", , email = "brian@silviaterra.com", c("aut", "cre")),
     person("Rodman", "Henry", , email = "henry@silviaterra.com", role = "aut"),
+    person("Clough", "Brian", , email = "brian@silviaterra.com", c("aut", "cre")),
     person("SilviaTerra", role = c("cph", "fnd"))
     )
 Description: A simple user interface for downloading and importing FIA data from
