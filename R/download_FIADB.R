@@ -20,10 +20,16 @@
 download_by_state <- function(state, file_dir = tempdir(),
                               files = c("PLOT", "SUBPLOT", "COND", "TREE", "SURVEY")) {
 
+  if (files == "ALL") {
+    state_files <- state
+  } else {
+    state_files <- glue::glue("{state}_{files}")
+  }
+  
   urls <- glue::glue(
-    "https://apps.fs.usda.gov/fia/datamart/CSV/{state}_{files}.zip"
+    "https://apps.fs.usda.gov/fia/datamart/CSV/{state_files}.zip"
   )
-  local_files <- glue::glue("{file_dir}/{state}_{files}.csv")
+  local_files <- glue::glue("{file_dir}/{state_files}.csv")
 
   downloaded_files <- purrr::map(
     .x = urls,
