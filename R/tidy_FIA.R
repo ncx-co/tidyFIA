@@ -72,11 +72,16 @@ tidy_fia <- function(states = NULL, aoi = NULL,
       remove = FALSE
     )
 
-  if(length(tables[["plot_locs"]]$plot_loc_id) !=
-     length(tables[["PLOT"]]$plot_loc_id)){
-       warning('The assembled PLOT table has some NA LAT/LON values. Filter by unique
-                values of plot_locs$plot_loc_id if you wish to drop these.')
-     }
+  if (length(tables[["plot_locs"]]$plot_loc_id) !=
+    length(tables[["PLOT"]]$plot_loc_id)) {
+    warning(
+      glue::glue(
+        "The assembled PLOT table has some NA LAT/LON values.
+        Filter by unique values of plot_locs$plot_loc_id if you wish to drop
+        these."
+      )
+    )
+  }
 
 
   # clip to aoi if applicable
