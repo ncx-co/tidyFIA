@@ -37,13 +37,13 @@ tidy_fia <- function(states = NULL, aoi = NULL,
 
   # combine tables
   tables <- purrr::map(
-    .x = files,
+    .x = names(fia_db_files[[1]]),
     .f = ~ stack_tables(
       table_name = .x,
       fia_db_files = fia_db_files
     )
   )
-  names(tables) <- files
+  names(tables) <- names(fia_db_files[[1]])
 
   # uniquely identify plots by location
   tables[["plot_locs"]] <- tables[["PLOT"]] %>%
