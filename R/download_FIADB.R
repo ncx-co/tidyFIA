@@ -20,7 +20,7 @@
 download_by_state <- function(state, file_dir = tempdir(),
                               files = c("PLOT", "SUBPLOT", "COND", "TREE", "SURVEY")) {
 
-  if (files == "ALL") {
+  if ("ALL" %in% files) {
     state_files <- state
   } else {
     state_files <- glue::glue("{state}_{files}")
@@ -31,12 +31,24 @@ download_by_state <- function(state, file_dir = tempdir(),
   )
   local_files <- glue::glue("{file_dir}/{state_files}.csv")
 
-  downloaded_files <- purrr::map(
-    .x = urls,
-    .f = ~ download_and_unzip(url = .x, file_dir = file_dir)
+  downloaded_files <-
+    as.list(
+      unlist(
+        purrr::map(
+          .x = urls,
+          .f = ~ download_and_unzip(url = .x, file_dir = file_dir)
+        )
+      )
+    )
+  
+  names(downloaded_files) <- purrr::map(
+    .x = downloaded_files,
+    .f = ~ stringr::str_replace(
+      basename(tools::file_path_sans_ext(.x)),
+      glue::glue("{state}_"),
+      ""
+    )
   )
-
-  names(downloaded_files) <- files
 
   return(downloaded_files)
 }
