@@ -25,7 +25,7 @@ tidy_fia <- function(states = NULL, aoi = NULL,
       sf::st_transform(sf::st_crs(aoi)) %>%
       sf::st_intersection(aoi) %>%
       dplyr::mutate(
-        !! "ABB" := datasets::state.abb[match(.data[["NAME"]], datasets::state.name)]
+        ABB = datasets::state.abb[match(.data[["NAME"]], datasets::state.name)]
       ) %>%
       dplyr::pull(.data[["ABB"]])
   }
@@ -103,7 +103,7 @@ tidy_fia <- function(states = NULL, aoi = NULL,
   if (is.null(aoi)) {
     aoi <- spData::us_states %>%
       dplyr::mutate(
-        !! "ABB" := datasets::state.abb[match(.data[["NAME"]], datasets::state.name)]
+        ABB = datasets::state.abb[match(.data[["NAME"]], datasets::state.name)]
       ) %>%
       dplyr::filter(.data[["ABB"]] %in% states)
   }
