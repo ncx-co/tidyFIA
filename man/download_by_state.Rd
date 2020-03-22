@@ -4,8 +4,11 @@
 \alias{download_by_state}
 \title{download FIA database files by state}
 \usage{
-download_by_state(state, file_dir = tempdir(), files = c("PLOT",
-  "SUBPLOT", "COND", "TREE", "SURVEY"))
+download_by_state(
+  state,
+  file_dir = tempdir(),
+  files = c("PLOT", "SUBPLOT", "COND", "TREE", "SURVEY")
+)
 }
 \arguments{
 \item{state}{character state abbreviation code}

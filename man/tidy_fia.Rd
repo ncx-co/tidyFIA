@@ -4,8 +4,11 @@
 \alias{tidy_fia}
 \title{Create tidy FIA tables}
 \usage{
-tidy_fia(states = NULL, aoi = NULL, files = c("PLOT", "SUBPLOT",
-  "COND", "TREE", "SURVEY"))
+tidy_fia(
+  states = NULL,
+  aoi = NULL,
+  files = c("PLOT", "SUBPLOT", "COND", "TREE", "SURVEY")
+)
 }
 \arguments{
 \item{states}{a character vector of state abbreviations, ignored if `aoi` is
