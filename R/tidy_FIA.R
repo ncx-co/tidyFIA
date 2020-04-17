@@ -5,114 +5,141 @@
 #' @param states a character vector of state abbreviations, ignored if `aoi` is
 #' supplied.
 #' @param aoi sf object containing area of interest
-#' @param files list of FIA tables to download. Tables must be identified by
+#' @param table_names list of FIA tables to download. Tables must be identified by
 #' their 'Oracle Table Name' as described in the 'Index of Tables' in FIADB
 #' User Guide.
+#' @param postgis logical if true, query PostGIS database instead of downloading
+#' csvs from FIA Datamart.
 #' @return a list object containing tidy data
 #' @author Henry Rodman, Brian Clough
 #' @importFrom magrittr %>%
 #' @importFrom rlang .data
 #' @export
 
-tidy_fia <- function(states = NULL, aoi = NULL,
-                     files = c("PLOT", "SUBPLOT", "COND", "TREE", "SURVEY")) {
+tidy_fia <- function(states = NULL, aoi = NULL, postgis,
+                     table_names = c("plot", "subplot", "cond", "tree", "survey")) {
   if (is.null(aoi) & is.null(states)) {
     stop("please specify an AOI or a list of US states")
   }
 
-  if (!is.null(aoi)) {
-    states <- spData::us_states %>%
-      sf::st_transform(sf::st_crs(aoi)) %>%
-      sf::st_intersection(aoi) %>%
-      dplyr::mutate(
-        ABB = datasets::state.abb[match(.data[["NAME"]], datasets::state.name)]
-      ) %>%
-      dplyr::pull(.data[["ABB"]])
-  }
-
-  # download tables
-  fia_db_files <- purrr::map(
-    .x = states,
-    .f = ~ download_by_state(state = .x, files = files)
-  )
-
-  # combine tables
-  tables <- purrr::map(
-    .x = files,
-    .f = ~ stack_tables(
-      table_name = .x,
-      fia_db_files = fia_db_files
-    )
-  )
-  names(tables) <- files
-
-  # uniquely identify plots by location
-  tables[["plot_locs"]] <- tables[["PLOT"]] %>%
-    dplyr::select(
-      .data[["STATECD"]], .data[["UNITCD"]], .data[["COUNTYCD"]], .data[["PLOT"]],
-      .data[["LAT"]], .data[["LON"]], .data[["ELEV"]]
-    ) %>%
-    dplyr::distinct() %>%
-    tidyr::unite(
-      "plot_loc_id",
-      c("STATECD", "UNITCD", "COUNTYCD", "PLOT"),
-      sep = "_"
-    ) %>%
-    sf::st_as_sf(
-      coords = c("LON", "LAT"),
-      crs = 4326,
-      remove = FALSE
-    )
-
-  tables[["PLOT"]] <- tables[["PLOT"]] %>%
-    tidyr::unite(
-      "plot_loc_id",
-      c("STATECD", "UNITCD", "COUNTYCD", "PLOT"),
-      sep = "_",
-      remove = FALSE
-    )
-
-  # clip to aoi if applicable
-  if (!is.null(aoi)) {
-    message("filtering plot locations down to aoi")
-    tables[["plot_locs"]] <- tables[["plot_locs"]] %>%
-      sf::st_intersection(sf::st_transform(aoi, 4326))
-
-    tables[["PLOT"]] <- tables[["PLOT"]] %>%
-      dplyr::filter(
-        .data[["plot_loc_id"]] %in% tables[["plot_locs"]][["plot_loc_id"]]
-      )
-
-    # filter all other tables to CNs in geographically filtered plots
-    for (file in files) {
-      if ("PLT_CN" %in% names(tables[[file]])) {
-        tables[[file]] <- tables[[file]] %>%
-          dplyr::filter(
-            .data[["PLT_CN"]] %in% tables[["PLOT"]][["CN"]]
-          )
-      } else {
-        tables[[file]] <- tables[[file]] %>%
-          dplyr::filter(
-            .data[["CN"]] %in% tables[["PLOT"]][["CN"]]
-          )
-      }
-    }
-  }
-
-  # append aoi
-  if (is.null(aoi)) {
+  if (is.null(aoi) & !is.null(states)) {
     aoi <- spData::us_states %>%
       dplyr::mutate(
         ABB = datasets::state.abb[match(.data[["NAME"]], datasets::state.name)]
       ) %>%
       dplyr::filter(.data[["ABB"]] %in% states)
   }
+  
+  if (postgis) {
+    # connect to database
+    con <- DBI::dbConnect(
+      RPostgres::Postgres(),
+      dbname = "fiadb",
+      host = "fiadb.csrjp3emmira.us-east-1.rds.amazonaws.com",
+      port = 5432,
+      user = "tidyfia",
+      password = Sys.getenv("TIDY_FIA_PASSWORD")
+    )
 
+    # identify plot CNs
+    plot_table <- query_plot_table(aoi = aoi, con = con)
+
+    # retrieve rest of tables
+    table_names <- setdiff(tolower(table_names), "plot")
+    tables <- purrr::map(
+      .x = table_names,
+      .f = ~ query_table(
+        table_name = .x,
+        plt_cns = plot_table$cn,
+        con = con
+      )
+    )
+
+    names(tables) <- table_names
+
+    DBI::dbDisconnect(con)
+
+    # append plot table
+    tables[["plot"]] <- plot_table
+    
+  } else {
+    if (!is.null(aoi)) {
+      states <- spData::us_states %>%
+        sf::st_transform(sf::st_crs(aoi)) %>%
+        sf::st_intersection(aoi) %>%
+        dplyr::mutate(
+          ABB = datasets::state.abb[match(.data[["NAME"]], datasets::state.name)]
+        ) %>%
+        dplyr::pull(.data[["ABB"]])
+    }
+
+    # download tables
+    fia_db_files <- purrr::map(
+      .x = states,
+      .f = ~ download_by_state(state = .x, files = files)
+    )
+      
+      # combine tables
+    tables <- purrr::map(
+      .x = files,
+      .f = ~ stack_tables(
+        table_name = .x,
+        fia_db_files = fia_db_files
+      )
+    )
+    names(tables) <- tolower(files)
+
+    # spatialize plots table
+    tables[["plot"]] <- tables[["plot"]] %>%
+      sf::st_as_sf(
+        coords = c("lon", "lat"),
+        crs = 4326,
+        remove = FALSE
+      )
+
+    # clip to aoi if applicable
+    if (!is.null(aoi)) {
+      message("filtering plot locations down to aoi")
+      tables[["plot_locs"]] <- tables[["plot_locs"]] %>%
+        sf::st_intersection(sf::st_transform(aoi, 4326))
+
+      tables[["PLOT"]] <- tables[["PLOT"]] %>%
+        dplyr::filter(
+          .data[["plot_loc_id"]] %in% tables[["plot_locs"]][["plot_loc_id"]]
+        )
+
+      # filter all other tables to CNs in geographically filtered plots
+      for (file in files) {
+        if ("PLT_CN" %in% names(tables[[file]])) {
+          tables[[file]] <- tables[[file]] %>%
+            dplyr::filter(
+              .data[["PLT_CN"]] %in% tables[["PLOT"]][["CN"]]
+            )
+        } else {
+          tables[[file]] <- tables[[file]] %>%
+            dplyr::filter(
+              .data[["CN"]] %in% tables[["PLOT"]][["CN"]]
+            )
+        }
+      }
+    }
+
+    # append aoi
+    if (is.null(aoi)) {
+      aoi <- spData::us_states %>%
+        dplyr::mutate(
+          ABB = datasets::state.abb[match(.data[["NAME"]], datasets::state.name)]
+        ) %>%
+        dplyr::filter(.data[["ABB"]] %in% states)
+    }
+    
+    tables[["states"]] <- states
+  }
+  
+  # append aoi
   tables[["aoi"]] <- aoi
 
-  # append states
-  tables[["states"]] <- states
-
+  # export
   class(tables) <- c("tidyFIA", class(tables))
 
   return(tables)
@@ -141,7 +168,6 @@ stack_tables <- function(table_name, fia_db_files) {
       )
     )
 }
-
 
 #' @title Read FIA reference table
 #'
@@ -174,7 +200,7 @@ plot.tidyFIA <- function(x, ...) {
       alpha = 0
     ) +
     geom_sf(
-      data = x[["plot_locs"]],
+      data = x[["plots"]],
       color = "black",
       alpha = 1
     ) +
