@@ -166,6 +166,9 @@ stack_tables <- function(table_name, fia_db_files) {
         SRV_CN = "c",
         CTY_CN = "c"
       )
+    ) %>%
+    dplyr::rename_all(
+      tolower
     )
 }
 
@@ -180,7 +183,10 @@ read_ref_table <- function(table_name) {
   url <- glue::glue(
     "https://apps.fs.usda.gov/fia/datamart/CSV/{table_name}.csv"
   )
-  vroom::vroom(url, delim = ",")
+  vroom::vroom(url, delim = ",") %>%
+    dplyr::rename_all(
+      tolower
+    )
 }
 
 #' @title Plot method for `tidyFIA` class
