@@ -7,7 +7,7 @@
 tidy_fia(
   states = NULL,
   aoi = NULL,
-  postgis,
+  postgis = TRUE,
   table_names = c("plot", "subplot", "cond", "tree", "survey")
 )
 }
