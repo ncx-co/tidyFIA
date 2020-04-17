@@ -7,7 +7,8 @@
 tidy_fia(
   states = NULL,
   aoi = NULL,
-  files = c("PLOT", "SUBPLOT", "COND", "TREE", "SURVEY")
+  postgis,
+  table_names = c("plot", "subplot", "cond", "tree", "survey")
 )
 }
 \arguments{
@@ -16,7 +17,10 @@ supplied.}
 
 \item{aoi}{sf object containing area of interest}
 
-\item{files}{list of FIA tables to download. Tables must be identified by
+\item{postgis}{logical if true, query PostGIS database instead of downloading
+csvs from FIA Datamart.}
+
+\item{table_names}{list of FIA tables to download. Tables must be identified by
 their 'Oracle Table Name' as described in the 'Index of Tables' in FIADB
 User Guide.}
 }
