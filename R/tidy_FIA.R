@@ -16,7 +16,7 @@
 #' @importFrom rlang .data
 #' @export
 
-tidy_fia <- function(states = NULL, aoi = NULL, postgis,
+tidy_fia <- function(states = NULL, aoi = NULL, postgis = TRUE,
                      table_names = c("plot", "subplot", "cond", "tree", "survey")) {
   if (is.null(aoi) & is.null(states)) {
     stop("please specify an AOI or a list of US states")
@@ -29,8 +29,13 @@ tidy_fia <- function(states = NULL, aoi = NULL, postgis,
       ) %>%
       dplyr::filter(.data[["ABB"]] %in% states)
   }
-  
+
   if (postgis) {
+    if (nchar(Sys.getenv("TIDY_FIA_PASSWORD")) == 0) {
+      stop(
+        "you must add TIDY_FIA_PASSWORD in your .Renviron file"
+      )
+    }
     # connect to database
     con <- DBI::dbConnect(
       RPostgres::Postgres(),
@@ -40,6 +45,7 @@ tidy_fia <- function(states = NULL, aoi = NULL, postgis,
       user = "tidyfia",
       password = Sys.getenv("TIDY_FIA_PASSWORD")
     )
+    message("connected to tidyfia database")
 
     # identify plot CNs
     plot_table <- query_plot_table(aoi = aoi, con = con)
@@ -61,7 +67,7 @@ tidy_fia <- function(states = NULL, aoi = NULL, postgis,
 
     # append plot table
     tables[["plot"]] <- plot_table
-    
+
   } else {
     if (!is.null(aoi)) {
       states <- spData::us_states %>%
@@ -78,7 +84,7 @@ tidy_fia <- function(states = NULL, aoi = NULL, postgis,
       .x = states,
       .f = ~ download_by_state(state = .x, files = files)
     )
-      
+
       # combine tables
     tables <- purrr::map(
       .x = files,
@@ -132,10 +138,10 @@ tidy_fia <- function(states = NULL, aoi = NULL, postgis,
         ) %>%
         dplyr::filter(.data[["ABB"]] %in% states)
     }
-    
+
     tables[["states"]] <- states
   }
-  
+
   # append aoi
   tables[["aoi"]] <- aoi
 
