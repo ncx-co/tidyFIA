@@ -69,20 +69,14 @@ county_names <- c(
   "Lake",
   "St. Louis",
   "Koochiching",
-  "Itasca",
-  "Carlton",
-  "Aitkin",
-  "Cass",
-  "Crow Wing",
-  "Hubbard",
-  "Beltrami",
-  "Lake of the Woods"
+  "Itasca"
 )
 
 northern_counties <- counties %>%
   filter(CTY_NAME %in% county_names) %>%
   group_by(CTY_NAME, CTY_FIPS) %>%
-  summarize()
+  summarize() %>%
+  ungroup()
 ```
 
 Here is a map for some context:
@@ -108,56 +102,48 @@ ggplot() +
 
 ## FIA data
 
-Now I will download the FIA "PLOT" and "TREE" tables for Minnesota using the function `tidy_fia`.
+Now I will collect the FIA "plot" and "tree" tables for Minnesota using the function `tidy_fia`.
 
 ```{r get_data}
 aoi <- northern_counties %>%
   summarize()
 
 fia_data <- tidy_fia(
-  state = "MN",
-  files = c("PLOT", "TREE")
+  aoi = aoi,
+  table_names = c("plot", "tree"),
+  postgis = TRUE
 )
 ```
 
-Since the TREE table does not have common names for the trees I am importing the REF_SPECIES table from FIADB using the function `read_ref_table`.
+Since the tree table does not have common names for the trees I am importing the REF_SPECIES table from FIADB using the function `read_ref_table`.
 ```{r ref_species}
 ref_species <- read_ref_table("REF_SPECIES") %>%
-  select(SPCD, COMMON_NAME, SFTWD_HRDWD)
+  select(spcd, common_name, sftwd_hrdwd)
 
+```
+
+The tree table has codes for state and county but the readable names are stored in a separate table ("COUNTY") which is stored at the state-level but is also available for the entire US.
+```{r}
+ref_county <- read_ref_table("COUNTY") %>%
+  select(statecd, countycd, county = countynm)
 ```
 
 ## Analysis
 
-We are only interested in white spruce in northern MN so I am filtering the FIA plots down to ones measured in the northern counties (as identified by the county FIPS codes in the PLOT table).
-```{r filter_plots}
-plots <- fia_data[["PLOT"]] %>%
-  filter(
-    COUNTYCD %in% northern_counties$CTY_FIPS,
-    INVYR >= 2000
-  ) %>%
-  transmute(
-    CN,
-    COUNTYCD,
-    CTY_NAME = northern_counties$CTY_NAME[match(COUNTYCD, northern_counties$CTY_FIPS)]
-  )
-```
-
 Perhaps white spruce shows differences in height and diameter relationships with respect to the type of forest community it inhabits.
-I am going to designate each plot as 'hardwood', 'mixed', or 'softwood' using plot basal area in hardwood/softwood trees in the TREE table.
-```{r plot_attributes}
+I am going to designate each plot as 'hardwood', 'mixed', or 'softwood' using plot basal area in hardwood/softwood trees in the tree table.
 
-plot_stats <- fia_data[["TREE"]] %>%
-  filter(PLT_CN %in% plots$CN) %>%
-  left_join(ref_species, by = "SPCD") %>%
-  group_by(PLT_CN, SFTWD_HRDWD) %>%
+```{r plot_attributes}
+plot_stats <- fia_data[["tree"]] %>%
+  left_join(ref_species) %>%
+  group_by(plt_cn, sftwd_hrdwd) %>%
   summarize(
-    bapa = sum(TPA_UNADJ * 0.005454 * DIA ^ 2, na.rm = TRUE)
+    bapa = sum(tpa_unadj * 0.005454 * dia ^ 2, na.rm = TRUE)
   ) %>%
   ungroup() %>%
   pivot_wider(
-    names_from = "SFTWD_HRDWD",
-    values_from = bapa
+    names_from = "sftwd_hrdwd",
+    values_from = "bapa"
   ) %>%
   replace_na(
     replace = list(H = 0, S = 0)
@@ -169,36 +155,27 @@ plot_stats <- fia_data[["TREE"]] %>%
       H / (H + S) >= 0.3 ~ "mixed",
       H / (H + S) < 0.3 ~ "softwood"
     )
-  ) %>%
-  left_join(
-    plots,
-    by = c("PLT_CN" = "CN")
   )
 
 ```
 
-Now I can filter the TREE table down to just live (`STATUSCD == 1`) white spruce.
+Now I can filter the TREE table down to just live (`statuscd == 1`) white spruce.
 ```{r tree_ht}
-white_spruce <- fia_data[["TREE"]] %>%
-  left_join(ref_species, by = "SPCD") %>%
+white_spruce <- fia_data[["tree"]] %>%
+  left_join(ref_species, by = "spcd") %>%
   filter(
-    PLT_CN %in% plot_stats$PLT_CN,
-    COMMON_NAME == "white spruce",
-    STATUSCD == 1, !is.na(DIA), !is.na(HT)
+    common_name == "white spruce",
+    statuscd == 1, !is.na(dia), !is.na(ht)
   ) %>%
-  left_join(plot_stats, by = "PLT_CN"
-  ) %>%
-  select(
-    PLT_CN, CTY_NAME, type, H, S, total,
-    COMMON_NAME, DIA, HT
-  )
+  left_join(plot_stats, by = "plt_cn") %>%
+  left_join(ref_county, by = c("statecd", "countycd"))
 ```
 
 To get a sense for height/diameter relationships in white spruce I will make a graph that shows the trend by forest type and county.
 ```{r county_type_plot}
 white_spruce %>%
-  ggplot(aes(x = DIA, y = HT, color = type)) +
-  facet_wrap(~ CTY_NAME) +
+  ggplot(aes(x = dia, y = ht, color = type)) +
+  facet_wrap(~ county) +
   geom_smooth() +
   labs(
     x = "DBH (in)",
@@ -212,7 +189,7 @@ white_spruce %>%
 That graph is somewhat hard to read and does not show any obvious differences in height:diameter relationships so I will try one graph with a separate line for each county.
 ```{r county_plot}
 white_spruce %>%
-  ggplot(aes(x = DIA, y = HT, color = CTY_NAME)) +
+  ggplot(aes(x = dia, y = ht, color = county)) +
   geom_smooth() +
   labs(
     x = "DBH (in)",
