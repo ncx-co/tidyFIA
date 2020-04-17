@@ -212,7 +212,7 @@ plot.tidyFIA <- function(x, ...) {
       alpha = 0
     ) +
     geom_sf(
-      data = x[["plots"]],
+      data = x[["plot"]],
       color = "black",
       alpha = 1
     ) +
