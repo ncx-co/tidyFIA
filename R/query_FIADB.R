@@ -37,7 +37,9 @@ query_plot_table <- function(aoi, con) {
 #' @return dataframe with matching records from the target table
 
 query_table <- function(table_name, plt_cns, con) {
-  message(table_name)
+  message(
+    glue::glue("finding matching records in {table_name} table")
+  )
   table_call <- as.character(glue::glue("fs_fiadb.{table_name}"))
   tab <- dplyr::tbl(
     con,
