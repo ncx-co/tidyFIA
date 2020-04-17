@@ -17,12 +17,15 @@ VignetteBuilder: knitr
 Encoding: UTF-8
 LazyData: true
 Imports:
+    DBI,
+    dbplyr,
     dplyr,
     ggplot2,
     glue,
     magrittr,
     purrr,
     rlang,
+    RPostgres,
     sf,
     spData,
     tidyr,
