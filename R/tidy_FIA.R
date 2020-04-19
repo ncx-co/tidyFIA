@@ -2,7 +2,7 @@
 #' @description This function queries the FIA database, by state abbreviation(s)
 #' or area of interest,and returns a list of tidy data objects including the
 #' TREE, PLOT, COND, and SURVEY tables.
-#' @param states a character vector of state abbreviations, ignored if `aoi` is
+#' @param states a character vector of state abbreviations, ignored if \code{aoi} is
 #' supplied.
 #' @param aoi sf object containing area of interest
 #' @param files list of FIA tables to download. Tables must be identified by
@@ -119,7 +119,7 @@ tidy_fia <- function(states = NULL, aoi = NULL,
 }
 
 #' @title Stack tables
-#' @description Import all files called `table_name` from `fia_db_files` as
+#' @description Import all files called \code{table_name} from \code{fia_db_files} as
 #' one dataframe
 #'
 #' @param table_name Oracle table name from FIADB
@@ -157,10 +157,10 @@ read_ref_table <- function(table_name) {
   vroom::vroom(url, delim = ",")
 }
 
-#' @title Plot method for `tidyFIA` class
+#' @title Plot method for \code{tidyFIA} class
 #' @author Henry Rodman
-#' @param x object of class `tidyFIA` (output from `tidy_fia`)
-#' @param ... Arguments to be passed `ggplot`
+#' @param x object of class \code{tidyFIA} (output from \code{\link{tidy_fia}})
+#' @param ... Arguments to be passed \code{ggplot}
 #' @method plot tidyFIA
 #' @import ggplot2
 #' @export
