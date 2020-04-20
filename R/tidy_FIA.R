@@ -84,18 +84,18 @@ tidy_fia <- function(states = NULL, aoi = NULL, postgis = TRUE,
     # download tables
     fia_db_files <- purrr::map(
       .x = states,
-      .f = ~ download_by_state(state = .x, files = files)
+      .f = ~ download_by_state(state = .x, files = table_names)
     )
 
       # combine tables
     tables <- purrr::map(
-      .x = files,
+      .x = table_names,
       .f = ~ stack_tables(
         table_name = .x,
         fia_db_files = fia_db_files
       )
     )
-    names(tables) <- tolower(files)
+    names(tables) <- tolower(table_names)
 
     # spatialize plots table
     tables[["plot"]] <- tables[["plot"]] %>%
@@ -108,25 +108,20 @@ tidy_fia <- function(states = NULL, aoi = NULL, postgis = TRUE,
     # clip to aoi if applicable
     if (!is.null(aoi)) {
       message("filtering plot locations down to aoi")
-      tables[["plot_locs"]] <- tables[["plot_locs"]] %>%
+      tables[["plot"]] <- tables[["plot"]] %>%
         sf::st_intersection(sf::st_transform(aoi, 4326))
 
-      tables[["PLOT"]] <- tables[["PLOT"]] %>%
-        dplyr::filter(
-          .data[["plot_loc_id"]] %in% tables[["plot_locs"]][["plot_loc_id"]]
-        )
-
       # filter all other tables to CNs in geographically filtered plots
-      for (file in files) {
-        if ("PLT_CN" %in% names(tables[[file]])) {
+      for (file in table_names) {
+        if ("plt_cn" %in% names(tables[[file]])) {
           tables[[file]] <- tables[[file]] %>%
             dplyr::filter(
-              .data[["PLT_CN"]] %in% tables[["PLOT"]][["CN"]]
+              .data[["plt_cn"]] %in% tables[["plot"]][["cn"]]
             )
         } else {
           tables[[file]] <- tables[[file]] %>%
             dplyr::filter(
-              .data[["CN"]] %in% tables[["PLOT"]][["CN"]]
+              .data[["cn"]] %in% tables[["plot"]][["cn"]]
             )
         }
       }
@@ -136,9 +131,9 @@ tidy_fia <- function(states = NULL, aoi = NULL, postgis = TRUE,
     if (is.null(aoi)) {
       aoi <- spData::us_states %>%
         dplyr::mutate(
-          ABB = datasets::state.abb[match(.data[["NAME"]], datasets::state.name)]
+          state_abb = datasets::state.abb[match(.data[["NAME"]], datasets::state.name)]
         ) %>%
-        dplyr::filter(.data[["ABB"]] %in% states)
+        dplyr::filter(.data[["state_abb"]] %in% states)
     }
 
     tables[["states"]] <- states
