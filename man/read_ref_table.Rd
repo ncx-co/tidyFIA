@@ -4,7 +4,7 @@
 \alias{read_ref_table}
 \title{Read FIA reference table}
 \usage{
-read_ref_table(table)
+read_ref_table(table_name)
 }
 \arguments{
 \item{table_name}{name of reference table e.g. "REF_SPECIES"}

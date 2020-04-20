@@ -2,17 +2,17 @@
 % Please edit documentation in R/tidy_FIA.R
 \name{plot.tidyFIA}
 \alias{plot.tidyFIA}
-\title{Plot method for `tidyFIA` class}
+\title{Plot method for \code{tidyFIA} class}
 \usage{
 \method{plot}{tidyFIA}(x, ...)
 }
 \arguments{
-\item{x}{object of class `tidyFIA` (output from `tidy_fia`)}
+\item{x}{object of class \code{tidyFIA} (output from \code{\link{tidy_fia}})}
 
-\item{...}{Arguments to be passed `ggplot`}
+\item{...}{Arguments to be passed \code{ggplot}}
 }
 \description{
-Plot method for `tidyFIA` class
+Plot method for \code{tidyFIA} class
 }
 \author{
 Henry Rodman

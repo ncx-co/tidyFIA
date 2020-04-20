@@ -15,6 +15,6 @@ stack_tables(table_name, fia_db_files)
 dataframe containing data comibined from all states
 }
 \description{
-Import all files called `table_name` from `fia_db_files` as
+Import all files called \code{table_name} from \code{fia_db_files} as
 one dataframe
 }

@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
   dev = "png",
   dpi = 150,
   fig.asp = 0.8,
-  fig.width = 5,
+  fig.width = 6,
   out.width = "90%",
   fig.align = "center"
 )
@@ -109,6 +109,7 @@ ggplot() +
 ## FIA data
 
 Now I will download the FIA "PLOT" and "TREE" tables for Minnesota using the function `tidy_fia`.
+
 ```{r get_data}
 aoi <- northern_counties %>%
   summarize()
@@ -119,7 +120,7 @@ fia_data <- tidy_fia(
 )
 ```
 
-Since the TREE table does not have common names for the trees I am importing the REF_SPECIES table from FIADB using the function `read_ref_table`s
+Since the TREE table does not have common names for the trees I am importing the REF_SPECIES table from FIADB using the function `read_ref_table`.
 ```{r ref_species}
 ref_species <- read_ref_table("REF_SPECIES") %>%
   select(SPCD, COMMON_NAME, SFTWD_HRDWD)
