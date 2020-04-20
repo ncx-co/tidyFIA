@@ -22,6 +22,8 @@ tidy_fia <- function(states = NULL, aoi = NULL, postgis = TRUE,
     stop("please specify an AOI or a list of US states")
   }
 
+  aoi <- sf::st_transform(aoi, crs = 4326)
+
   if (is.null(aoi) & !is.null(states)) {
     aoi <- spData::us_states %>%
       dplyr::mutate(
