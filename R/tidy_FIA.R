@@ -22,14 +22,29 @@ tidy_fia <- function(states = NULL, aoi = NULL, postgis = TRUE,
     stop("please specify an AOI or a list of US states")
   }
 
-  aoi <- sf::st_transform(aoi, crs = 4326)
+  if (any(!is.null(states) & !states %in% datasets::state.abb)) {
+    stop("you must provide a valid state abbreviation code")
+  }
+
+  if (!is.null(aoi)) {
+    aoi <- sf::st_transform(aoi, crs = 4326)
+
+    states <- spData::us_states %>%
+      sf::st_transform(sf::st_crs(aoi)) %>%
+      sf::st_intersection(aoi) %>%
+      dplyr::mutate(
+        ABB = datasets::state.abb[match(.data[["NAME"]], datasets::state.name)]
+      ) %>%
+      dplyr::pull(.data[["ABB"]])
+  }
 
   if (is.null(aoi) & !is.null(states)) {
     aoi <- spData::us_states %>%
       dplyr::mutate(
         ABB = datasets::state.abb[match(.data[["NAME"]], datasets::state.name)]
       ) %>%
-      dplyr::filter(.data[["ABB"]] %in% states)
+      dplyr::filter(.data[["ABB"]] %in% states) %>%
+      sf::st_transform(4326)
   }
 
   if (postgis) {
@@ -71,15 +86,6 @@ tidy_fia <- function(states = NULL, aoi = NULL, postgis = TRUE,
     tables[["plot"]] <- plot_table
 
   } else {
-    if (!is.null(aoi)) {
-      states <- spData::us_states %>%
-        sf::st_transform(sf::st_crs(aoi)) %>%
-        sf::st_intersection(aoi) %>%
-        dplyr::mutate(
-          ABB = datasets::state.abb[match(.data[["NAME"]], datasets::state.name)]
-        ) %>%
-        dplyr::pull(.data[["ABB"]])
-    }
 
     # download tables
     fia_db_files <- purrr::map(
