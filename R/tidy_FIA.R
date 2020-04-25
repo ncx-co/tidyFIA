@@ -50,7 +50,17 @@ tidy_fia <- function(states = NULL, aoi = NULL, postgis = TRUE,
   if (postgis) {
     if (nchar(Sys.getenv("TIDY_FIA_PASSWORD")) == 0) {
       stop(
-        "you must add TIDY_FIA_PASSWORD in your .Renviron file"
+        glue::glue(
+          "To utilize the PostGIS functionality you will need the database
+          password. To obtain the password, send an email to
+          henry@silviaterra.com
+          Once you have the password, add this line to your .Renviron file:
+          TIDY_FIA_PASSWORD=password
+
+          Alternatively, set the argument postgis to FALSE. tidy_fia will
+          download the data in CSV form from FIA Datamart instead.
+          "
+        )
       )
     }
     # connect to database
