@@ -63,7 +63,15 @@ download_and_unzip <- function(url, file_dir) {
   )
 
   if (!file.exists(zip_file)) {
-    utils::download.file(url, destfile = zip_file)
+    downloaded <- try(utils::download.file(url, destfile = zip_file))
+  }
+
+  if ("try-error" %in% class(downloaded)) {
+    stop(
+      glue::glue(
+        "{url} is not available to download at the moment"
+      )
+    )
   }
 
   utils::unzip(
