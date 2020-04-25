@@ -60,7 +60,6 @@ test_that("tidy_fia produces expected output when postgis = TRUE", {
 })
 
 test_that("tidy_fia produces expected output when postgis = FALSE", {
-
   aoi <- spData::us_states %>%
     dplyr::filter(NAME == "Connecticut") %>%
     sf::st_centroid() %>%
@@ -118,7 +117,6 @@ test_that("tidy_fia produces expected output when postgis = FALSE", {
 })
 
 test_that("tidy_fia produces expected output when aoi is NULL and postgis = TRUE", {
-
   want_tables <- c("plot", "subplot", "cond", "survey", "tree")
 
   expect_error(
@@ -178,7 +176,6 @@ test_that("tidy_fia produces expected output when aoi is NULL and postgis = TRUE
 })
 
 test_that("tidy_fia produces expected output when aoi is NULL and postgis = FALSE", {
-
   want_tables <- c("plot", "subplot", "cond", "survey", "tree")
 
   expect_error(

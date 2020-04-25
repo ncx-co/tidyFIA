@@ -7,7 +7,6 @@
 #' @author Henry Rodman
 
 query_plot_table <- function(aoi, con) {
-
   outline <- aoi %>%
     dplyr::mutate(aoi = "aoi") %>%
     dplyr::group_by(.data[["aoi"]]) %>%
@@ -57,4 +56,3 @@ query_table <- function(table_name, plt_cns, con) {
 
   return(out)
 }
-

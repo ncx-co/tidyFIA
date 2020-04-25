@@ -16,10 +16,9 @@
 #' \dontrun{
 #' fia_files <- download_fia_by_state("MN")
 #' }
-
+#'
 download_by_state <- function(state, file_dir = tempdir(),
                               files = c("PLOT", "SUBPLOT", "COND", "TREE", "SURVEY")) {
-
   urls <- glue::glue(
     "https://apps.fs.usda.gov/fia/datamart/CSV/{state}_{files}.zip"
   )
@@ -51,7 +50,7 @@ download_by_state <- function(state, file_dir = tempdir(),
 #'   file_dir = tempdir()
 #' )
 #' }
-
+#'
 download_and_unzip <- function(url, file_dir) {
   message(
     glue::glue("downloading {basename(url)}")

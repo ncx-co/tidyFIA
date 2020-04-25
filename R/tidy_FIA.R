@@ -94,7 +94,6 @@ tidy_fia <- function(states = NULL, aoi = NULL, postgis = TRUE,
 
     # append plot table
     tables[["plot"]] <- plot_table
-
   } else {
 
     # download tables
@@ -103,7 +102,7 @@ tidy_fia <- function(states = NULL, aoi = NULL, postgis = TRUE,
       .f = ~ download_by_state(state = .x, files = table_names)
     )
 
-      # combine tables
+    # combine tables
     tables <- purrr::map(
       .x = table_names,
       .f = ~ stack_tables(
