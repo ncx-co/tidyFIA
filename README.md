@@ -1,3 +1,7 @@
+<!-- badges: start -->
+  [![R build status](https://github.com/SilviaTerra/tidyFIA/workflows/R-CMD-check/badge.svg)](https://github.com/SilviaTerra/tidyFIA/actions)
+  [![Codecov test coverage](https://codecov.io/gh/SilviaTerra/tidyFIA/branch/master/graph/badge.svg)](https://codecov.io/gh/SilviaTerra/tidyFIA?branch=master)
+<!-- badges: end -->
 # tidyFIA <a href='https://silviaterra.com'><img src='man/figures/logo.png' align="right" height="139" /></a>
 
 ## Install
@@ -16,7 +20,7 @@ mn_data <- tidyFIA::tidy_fia(
   postgis = TRUE
 )
 ```
-SilviaTerra is hosting the FIADB data in a PostGIS database. Please reach out to (Henry Rodman)[henry@silviaterra.com] if you would like the password for the database. Alternatively you can ask `tidy_fia` to download and import the data directly from the CSVs stored at the [FIA datamart](https://apps.fs.usda.gov/fia/datamart/CSV/datamart_csv.html) by setting the parameter `postgis` to `FALSE`. This is slower than querying the database but will work without any authentication.
+SilviaTerra is hosting the FIADB data in a PostGIS database. Querying the PostGIS database is considerably faster than downloading and importing the CSV data directly from FIA CSV Datamart. Please reach out to [Henry Rodman](henry@silviaterra.com) if you would like the password for the database. Alternatively you can ask `tidy_fia` to download and import the data directly from the CSVs stored at the [FIA Datamart](https://apps.fs.usda.gov/fia/datamart/CSV/datamart_csv.html) by setting the parameter `postgis` to `FALSE`. This is slower than querying the database but will work without any authentication.
 
 The example will import these tables by default:
 `"plot", "subplot", "cond", "tree", "survey"`
