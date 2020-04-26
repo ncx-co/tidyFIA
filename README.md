@@ -28,7 +28,7 @@ The example will import these tables by default:
 Each table is an element in the list `mn_data`.
 To use one of the tables you call them like this:
 ```r
-mn_data[["PLOT"]]
-mn_data[["TREE"]]
+mn_data[["plot"]]
+mn_data[["tree"]]
 ...
 ```
