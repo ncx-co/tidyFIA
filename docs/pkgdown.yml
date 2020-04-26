@@ -1,0 +1,8 @@
+pandoc: '2.9'
+pkgdown: 1.5.1
+pkgdown_sha: ~
+articles:
+  using_tidyFIA: using_tidyFIA.html
+  white_spruce: white_spruce.html
+last_built: 2020-04-26T11:50Z
+
