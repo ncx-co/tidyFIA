@@ -5,22 +5,30 @@
 #' @param states a character vector of state abbreviations, ignored if \code{aoi} is
 #' supplied.
 #' @param aoi sf object containing area of interest
-#' @param files list of FIA tables to download. Tables must be identified by
+#' @param table_names list of FIA tables to download. Tables must be identified by
 #' their 'Oracle Table Name' as described in the 'Index of Tables' in FIADB
 #' User Guide.
+#' @param postgis logical if true, query PostGIS database instead of downloading
+#' csvs from FIA Datamart.
 #' @return a list object containing tidy data
 #' @author Henry Rodman, Brian Clough
 #' @importFrom magrittr %>%
 #' @importFrom rlang .data
 #' @export
 
-tidy_fia <- function(states = NULL, aoi = NULL,
-                     files = c("PLOT", "SUBPLOT", "COND", "TREE", "SURVEY")) {
+tidy_fia <- function(states = NULL, aoi = NULL, postgis = TRUE,
+                     table_names = c("plot", "subplot", "cond", "tree", "survey")) {
   if (is.null(aoi) & is.null(states)) {
     stop("please specify an AOI or a list of US states")
   }
 
+  if (any(!is.null(states) & !states %in% datasets::state.abb)) {
+    stop("you must provide a valid state abbreviation code")
+  }
+
   if (!is.null(aoi)) {
+    aoi <- sf::st_transform(aoi, crs = 4326)
+
     states <- spData::us_states %>%
       sf::st_transform(sf::st_crs(aoi)) %>%
       sf::st_intersection(aoi) %>%
@@ -30,97 +38,126 @@ tidy_fia <- function(states = NULL, aoi = NULL,
       dplyr::pull(.data[["ABB"]])
   }
 
-  # download tables
-  fia_db_files <- purrr::map(
-    .x = states,
-    .f = ~ download_by_state(state = .x, files = files)
-  )
-
-  # combine tables
-  tables <- purrr::map(
-    .x = files,
-    .f = ~ stack_tables(
-      table_name = .x,
-      fia_db_files = fia_db_files
-    )
-  )
-  names(tables) <- files
-
-  # uniquely identify plots by location
-  tables[["plot_locs"]] <- tables[["PLOT"]] %>%
-    dplyr::select(
-      .data[["STATECD"]], .data[["UNITCD"]], .data[["COUNTYCD"]], .data[["PLOT"]],
-      .data[["LAT"]], .data[["LON"]], .data[["ELEV"]]
-    ) %>%
-    dplyr::distinct() %>%
-    tidyr::unite(
-      "plot_loc_id",
-      c("STATECD", "UNITCD", "COUNTYCD", "PLOT"),
-      sep = "_"
-    ) %>%
-    dplyr::filter(!is.na(LAT)) %>%
-    sf::st_as_sf(
-      coords = c("LON", "LAT"),
-      crs = 4326,
-      remove = FALSE
-    )
-
-  tables[["PLOT"]] <- tables[["PLOT"]] %>%
-    tidyr::unite(
-      "plot_loc_id",
-      c("STATECD", "UNITCD", "COUNTYCD", "PLOT"),
-      sep = "_",
-      remove = FALSE
-    )
-
-  if(length(tables[["plot_locs"]]$plot_loc_id) !=
-     length(tables[["PLOT"]]$plot_loc_id)){
-       warning('The assembled PLOT table has some NA LAT/LON values. Filter by unique
-                values of plot_locs$plot_loc_id if you wish to drop these.')
-     }
-
-
-  # clip to aoi if applicable
-  if (!is.null(aoi)) {
-    message("filtering plot locations down to aoi")
-    tables[["plot_locs"]] <- tables[["plot_locs"]] %>%
-      sf::st_intersection(sf::st_transform(aoi, 4326))
-
-    tables[["PLOT"]] <- tables[["PLOT"]] %>%
-      dplyr::filter(
-        .data[["plot_loc_id"]] %in% tables[["plot_locs"]][["plot_loc_id"]]
-      )
-
-    # filter all other tables to CNs in geographically filtered plots
-    for (file in files) {
-      if ("PLT_CN" %in% names(tables[[file]])) {
-        tables[[file]] <- tables[[file]] %>%
-          dplyr::filter(
-            .data[["PLT_CN"]] %in% tables[["PLOT"]][["CN"]]
-          )
-      } else {
-        tables[[file]] <- tables[[file]] %>%
-          dplyr::filter(
-            .data[["CN"]] %in% tables[["PLOT"]][["CN"]]
-          )
-      }
-    }
-  }
-
-  # append aoi
-  if (is.null(aoi)) {
+  if (is.null(aoi) & !is.null(states)) {
     aoi <- spData::us_states %>%
       dplyr::mutate(
         ABB = datasets::state.abb[match(.data[["NAME"]], datasets::state.name)]
       ) %>%
-      dplyr::filter(.data[["ABB"]] %in% states)
+      dplyr::filter(.data[["ABB"]] %in% states) %>%
+      sf::st_transform(4326)
   }
 
+  if (postgis) {
+    if (nchar(Sys.getenv("TIDY_FIA_PASSWORD")) == 0) {
+      stop(
+        glue::glue(
+          "To utilize the PostGIS functionality you will need the database
+          password. To obtain the password, send an email to
+          henry@silviaterra.com
+          Once you have the password, add this line to your .Renviron file:
+          TIDY_FIA_PASSWORD=password
+
+          Alternatively, set the argument postgis to FALSE. tidy_fia will
+          download the data in CSV form from FIA Datamart instead.
+          "
+        )
+      )
+    }
+    # connect to database
+    con <- DBI::dbConnect(
+      RPostgres::Postgres(),
+      dbname = "fiadb",
+      host = "fiadb.csrjp3emmira.us-east-1.rds.amazonaws.com",
+      port = 5432,
+      user = "tidyfia",
+      password = Sys.getenv("TIDY_FIA_PASSWORD")
+    )
+    message("connected to tidyfia database")
+
+    # identify plot CNs
+    plot_table <- query_plot_table(aoi = aoi, con = con)
+
+    # retrieve rest of tables
+    table_names <- setdiff(tolower(table_names), "plot")
+    tables <- purrr::map(
+      .x = table_names,
+      .f = ~ query_table(
+        table_name = .x,
+        plt_cns = plot_table$cn,
+        con = con
+      )
+    )
+
+    names(tables) <- table_names
+
+    DBI::dbDisconnect(con)
+
+    # append plot table
+    tables[["plot"]] <- plot_table
+  } else {
+
+    # download tables
+    fia_db_files <- purrr::map(
+      .x = states,
+      .f = ~ download_by_state(state = .x, files = table_names)
+    )
+
+    # combine tables
+    tables <- purrr::map(
+      .x = table_names,
+      .f = ~ stack_tables(
+        table_name = .x,
+        fia_db_files = fia_db_files
+      )
+    )
+    names(tables) <- tolower(table_names)
+
+    # spatialize plots table
+    tables[["plot"]] <- tables[["plot"]] %>%
+      sf::st_as_sf(
+        coords = c("lon", "lat"),
+        crs = 4326,
+        remove = FALSE
+      )
+
+    # clip to aoi if applicable
+    if (!is.null(aoi)) {
+      message("filtering plot locations down to aoi")
+      tables[["plot"]] <- tables[["plot"]] %>%
+        sf::st_intersection(sf::st_transform(aoi, 4326))
+
+      # filter all other tables to CNs in geographically filtered plots
+      for (file in table_names) {
+        if ("plt_cn" %in% names(tables[[file]])) {
+          tables[[file]] <- tables[[file]] %>%
+            dplyr::filter(
+              .data[["plt_cn"]] %in% tables[["plot"]][["cn"]]
+            )
+        } else {
+          tables[[file]] <- tables[[file]] %>%
+            dplyr::filter(
+              .data[["cn"]] %in% tables[["plot"]][["cn"]]
+            )
+        }
+      }
+    }
+
+    # append aoi
+    if (is.null(aoi)) {
+      aoi <- spData::us_states %>%
+        dplyr::mutate(
+          state_abb = datasets::state.abb[match(.data[["NAME"]], datasets::state.name)]
+        ) %>%
+        dplyr::filter(.data[["state_abb"]] %in% states)
+    }
+
+    tables[["states"]] <- states
+  }
+
+  # append aoi
   tables[["aoi"]] <- aoi
 
-  # append states
-  tables[["states"]] <- states
-
+  # export
   class(tables) <- c("tidyFIA", class(tables))
 
   return(tables)
@@ -147,9 +184,11 @@ stack_tables <- function(table_name, fia_db_files) {
         SRV_CN = "c",
         CTY_CN = "c"
       )
+    ) %>%
+    dplyr::rename_all(
+      tolower
     )
 }
-
 
 #' @title Read FIA reference table
 #'
@@ -162,7 +201,10 @@ read_ref_table <- function(table_name) {
   url <- glue::glue(
     "https://apps.fs.usda.gov/fia/datamart/CSV/{table_name}.csv"
   )
-  vroom::vroom(url, delim = ",")
+  vroom::vroom(url, delim = ",") %>%
+    dplyr::rename_all(
+      tolower
+    )
 }
 
 #' @title Plot method for \code{tidyFIA} class
@@ -182,7 +224,7 @@ plot.tidyFIA <- function(x, ...) {
       alpha = 0
     ) +
     geom_sf(
-      data = x[["plot_locs"]],
+      data = x[["plot"]],
       color = "black",
       alpha = 1
     ) +
