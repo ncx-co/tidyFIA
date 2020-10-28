@@ -30,6 +30,7 @@ This function downloads FIA data for a single state
 \dontrun{
 fia_files <- download_fia_by_state("MN")
 }
+
 }
 \author{
 Henry Rodman
