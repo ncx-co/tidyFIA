@@ -26,7 +26,7 @@ tidy_fia <- function(states = NULL, aoi = NULL, postgis = TRUE,
     stop("you must provide a valid state abbreviation code")
   }
 
-  if (!is.null(aoi)) {
+  if (!is.null(aoi) & !postgis) {
     aoi <- sf::st_transform(aoi, crs = 4326)
 
     states <- spData::us_states %>%
@@ -94,6 +94,7 @@ tidy_fia <- function(states = NULL, aoi = NULL, postgis = TRUE,
 
     # append plot table
     tables[["plot"]] <- plot_table
+
   } else {
 
     # download tables
