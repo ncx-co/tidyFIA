@@ -26,8 +26,9 @@ tidy_fia <- function(states = NULL, aoi = NULL, postgis = TRUE,
     stop("you must provide a valid state abbreviation code")
   }
 
+  aoi <- sf::st_transform(aoi, crs = 4326)
+
   if (!is.null(aoi) & !postgis) {
-    aoi <- sf::st_transform(aoi, crs = 4326)
 
     states <- spData::us_states %>%
       sf::st_transform(sf::st_crs(aoi)) %>%
