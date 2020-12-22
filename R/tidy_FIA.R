@@ -114,6 +114,10 @@ tidy_fia <- function(states = NULL, aoi = NULL, postgis = TRUE,
 
     # spatialize plots table
     tables[["plot"]] <- tables[["plot"]] %>%
+      dplyr::filter(
+        !is.na(lon),
+        !is.na(lat)
+      ) %>%
       sf::st_as_sf(
         coords = c("lon", "lat"),
         crs = 4326,
