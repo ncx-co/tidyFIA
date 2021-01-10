@@ -47,7 +47,7 @@ query_table <- function(table_name, con) {
   
 }
 
-#' stratum_joins
+#' stratum_join
 #'
 #' Execute FIA DB stratum joins 
 #' @param con database connection
@@ -56,7 +56,7 @@ query_table <- function(table_name, con) {
 #'   # Fk: https://bit.ly/2XrnBhm
 #' @author Nathan Rutenbeck
 
-stratum_joins <- function(con, eval_typ = NULL) {
+stratum_join <- function(con) {
   # Follows from source: https://bit.ly/2XrnBhm
 
   tbl_names <- c(
@@ -73,8 +73,6 @@ stratum_joins <- function(con, eval_typ = NULL) {
   
   # do table joins (see Figure 3-1 in source)
   pop_eval_typ %>%
-    # Filter to evaluation type
-    dplyr::filter(eval_typ == !!eval_typ) %>%
     dplyr::select(
       -.data[["cn"]],
       -tidyselect::contains("created"),
@@ -127,7 +125,7 @@ stratum_joins <- function(con, eval_typ = NULL) {
     )
 }
 
-#' plot_joins
+#' plot_join
 #'
 #' Execute FIA DB stratum joins 
 #' @param con database connection
@@ -136,14 +134,15 @@ stratum_joins <- function(con, eval_typ = NULL) {
 #'   # Fk: https://bit.ly/2XrnBhm
 #' @author Nathan Rutenbeck
 
-plot_joins <- function(con, plt_cns) {
+plot_join <- function(con, plt_cns) {
     
-  for (t in c("pop_plot_stratum_assgn", "cond", "plot", "tree")) {
+  for (t in c("pop_plot_stratum_assgn", "cond", "plot")) {
     assign(t, query_table(con = con, t))
   }
   
+  # POP_PLOT_STRATUM_ASSGN
   pop_plot_stratum_assgn %>%
-    # Filter to area of interest
+    # Filter to target plt_cns
     dplyr::filter(plt_cn %in% dplyr::local(plt_cns)) %>%
     dplyr::select(
       tidyselect::everything(),
@@ -178,19 +177,31 @@ plot_joins <- function(con, plt_cns) {
         "plt_cn", "statecd", "invyr", "unitcd", "countycd", 
         "plot", "cycle", "subcycle"
       )
-    ) %>%
-    left_join(
-      dplyr::select(
-        tree,
-        tidyselect::everything(),
-        tree_cn = .data[["cn"]],
-        -tidyselect::contains("created"),
-        -tidyselect::contains("modified"),
-        -tidyselect::contains("notes")
-      ),
-      by = c(
-        "plt_cn", "statecd", "invyr", "unitcd", "countycd",
-        "plot", "cycle", "subcycle", "condid"
-      )
+    )
+}
+
+#' stem_join
+#'
+#' Link to stem table
+#' @param con database connection
+#' @param stem_table character; one of /code{c("tree", "seedling")} specifying 
+#'   which stem table to link to
+#' @param plt_cns character; plot cns for which to link trees
+#' @return object of class /code{tbl_PqConnection} linking joined tables
+#'   # Fk: https://bit.ly/2XrnBhm
+#' @author Nathan Rutenbeck
+
+stem_join <- function(con, stem_table = c("tree", "seedling"), plt_cns) {
+
+  stem_table <- match.arg(stem_table)
+
+  query_table(con = con, table_name = stem_table) %>%
+    dplyr::filter(.data[["plt_cn"]] %in% dplyr::local(plt_cns)) %>%
+    dplyr::select(
+      tidyselect::everything(),
+      stem_cn = .data[["cn"]],
+      -tidyselect::contains("created"),
+      -tidyselect::contains("modified"),
+      -tidyselect::contains("notes")
     )
 }
