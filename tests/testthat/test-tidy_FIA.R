@@ -4,9 +4,10 @@ test_that("tidy_fia produces expected output when postgis = TRUE", {
     tidy_fia(aoi = NULL, states = NULL, table_names = c("plot", "tree"))
   )
 
-  aoi <- spData::us_states %>%
-    dplyr::filter(NAME == "Minnesota") %>%
-    sf::st_sample(size = 1, type = "random") %>%
+  xy <- sf::st_point(c(-92.5267, 46.6887))
+  pt <- sf::st_sfc(xy, crs = 4326)
+
+  aoi <- pt %>%
     sf::st_sf() %>%
     sf::st_transform(2163) %>%
     sf::st_buffer(20000)
