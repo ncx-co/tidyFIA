@@ -42,7 +42,7 @@ query_table <- function(table_name, plt_cns, con) {
   table_call <- as.character(glue::glue("fs_fiadb.{table_name}"))
   tab <- dplyr::tbl(
     con,
-    dbplyr::in_schema("fiadb", table_call)
+    dbplyr::in_schema(dbplyr::sql("fiadb"), dbplyr::sql(table_call))
   )
 
   plt_cn_field <- dplyr::case_when(
