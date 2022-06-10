@@ -11,7 +11,7 @@ Authors@R: c(
 Description: A simple user interface for downloading and importing FIA data from
     FIADB (https://apps.fs.usda.gov/fia/datamart/CSV/datamart_csv.html) into R
     for analysis.
-URL: https://github.com/SilviaTerra/tidyFIA
+URL: https://github.com/ncx-co/tidyFIA
 License: MIT + file LICENSE
 VignetteBuilder: knitr
 Encoding: UTF-8
