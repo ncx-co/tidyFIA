@@ -15,7 +15,7 @@ query_plot_table <- function(aoi, con) {
     sf::st_as_text()
 
   plot_query <- glue::glue(
-    "SELECT * FROM fs_fiadb.plot WHERE ST_Contains(
+    "SELECT * FROM public.plot WHERE ST_Contains(
       ST_GeometryFromText('{outline}', 4326),
       plot.geom::geometry
     );"
@@ -39,7 +39,7 @@ query_table <- function(table_name, plt_cns, con) {
   message(
     glue::glue("finding matching records in {table_name} table")
   )
-  table_call <- as.character(glue::glue("fs_fiadb.{table_name}"))
+  table_call <- as.character(glue::glue("public.{table_name}"))
   tab <- dplyr::tbl(
     con,
     dbplyr::in_schema(dbplyr::sql("fiadb"), dbplyr::sql(table_call))
