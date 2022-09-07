@@ -3,7 +3,7 @@
 ## Install
 At this time you must install the `tidyFIA` package via GitHub.
 ```r
-remotes::install_github("SilviaTerra/tidyFIA")
+remotes::install_github("ncx-co/tidyFIA")
 ```
 
 ## Usage
