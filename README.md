@@ -1,4 +1,4 @@
-# tidyFIA <a href='https://silviaterra.com'><img src='man/figures/logo.png' align="right" height="139" /></a>
+# tidyFIA <img src='man/figures/logo.png' align="right" height="139" /></a>
 
 ## Install
 At this time you must install the `tidyFIA` package via GitHub.
@@ -7,16 +7,33 @@ remotes::install_github("ncx-co/tidyFIA")
 ```
 
 ## Usage
-The main function is `tidy_fia` which will import the specified tables from FIADB that correspond to an area of interest represented by a geospatial object in R (class `sf`) or a list of state abbreviations (e.g. `c("CA", "NV")`).
+The main function is `tidy_fia` which will import the specified tables from
+FIADB that correspond to an area of interest represented by a geospatial object
+in R (class `sf`) or a list of state abbreviations (e.g. `c("CA", "NV")`).
 
-To get started you can simply run this example command to get the FIA tables for the state of Minnesota:
+To get started you can simply run this example command to get the FIA tables for
+the state of Minnesota:
 ```r
 mn_data <- tidyFIA::tidy_fia(
   states = "MN",
   postgis = TRUE
 )
 ```
-SilviaTerra is hosting the FIADB data in a PostGIS database. Please reach out to [Henry Rodman](henry@silviaterra.com) if you would like the password for the database. Alternatively you can ask `tidy_fia` to download and import the data directly from the CSVs stored at the [FIA datamart](https://apps.fs.usda.gov/fia/datamart/CSV/datamart_csv.html) by setting the parameter `postgis` to `FALSE`. This is slower than querying the database but will work without any authentication.
+
+## Database
+[NCX](https://ncx.com) is hosting a clone of FIADB data in a PostGIS database
+and you are welcome to use it!
+The code NCX used to build the FIADB clone is located in the [`fiadb`](fiadb/)
+subdirectory of this repository.
+Please reach out to [Henry Rodman](henry@ncx.com) if you would like the password
+for the database and he will gladly share it.
+
+Alternatively you can ask `tidy_fia` to download and import the data directly
+from the CSVs stored at the
+[FIA datamart](https://apps.fs.usda.gov/fia/datamart/datamart.html) by setting
+the parameter `postgis` to `FALSE`.
+This is slower than querying the database but will work without any
+authentication.
 
 The example will import these tables by default:
 `"plot", "subplot", "cond", "tree", "survey"`
