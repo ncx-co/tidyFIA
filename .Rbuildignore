@@ -2,3 +2,5 @@
 ^\.Rproj\.user$
 ^data-raw$
 ^fiadb$
+^.github
+^.mypy_cache

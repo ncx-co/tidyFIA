@@ -61,14 +61,13 @@ unzip(
 super_file <- file.path(tempdir(), "Supersections/Supersections.shp")
 
 # import and reproject to EPSG:4326
-supersectionShape <- st_read(dsn = super_file) %>%
-  st_transform(crs = 4326) %>%
+supersectionShape <- st_read(dsn = super_file) |>
+  st_transform(crs = 4326) |>
   select(SSection, geometry)
 
 # filter
-ecoreg <- supersectionShape %>%
+ecoreg <- supersectionShape |>
   filter(SSection == "Adirondacks & Green Mountains")
-
 ```
 
 The function `tidy_fia` can either query a PostGIS database hosted by SilviaTerra (`postgis` = TRUE) or download the relevant FIA csv tables from [FIADB](https://apps.fs.usda.gov/fia/datamart/CSV/datamart_csv.html). Querying the database is generally faster than downloading and importing the csv files. The plots are filtered down to the points within the spatial area of interest (`aoi`). The `table_names` argument can be used to specify which FIADB tables from the "Index of Tables" in the [FIADB User Guide](https://www.fia.fs.fed.us/library/database-documentation/current/ver80/FIADB%20User%20Guide%20P2_8-0.pdf) you would like to download. The imported tables are returned as a list of dataframes.
@@ -86,9 +85,9 @@ A simple map of the plot locations can be printed by calling `plot(fia_data)`. T
 ```{r map, include = TRUE}
 p <- plot(fia_data)
 
-nearby_states <- spData::us_states %>%
-  st_transform(st_crs(ecoreg)) %>%
-  st_join(ecoreg) %>%
+nearby_states <- spData::us_states |>
+  st_transform(st_crs(ecoreg)) |>
+  st_join(ecoreg) |>
   filter(!is.na(SSection))
 
 p +
@@ -97,85 +96,81 @@ p +
     color = "blue",
     alpha = 0
   )
-
 ```
 
 ### Tree data
 The 'tree' table will be stored as an element in the list: `fia_data[["tree"]]`. This table can be used to explore tree-level attributes such as height:diameter relationships among species.
 ```{r trees, include = TRUE}
 # get REF_SPECIES tables
-ref_species <- read_ref_table("REF_SPECIES") %>%
+ref_species <- read_ref_table("REF_SPECIES") |>
   select(spcd, common_name)
 
 # most common species
-common_spp <- fia_data[["tree"]] %>%
-  group_by(spcd) %>%
-  tally %>%
-  top_n(9, wt = n) %>%
+common_spp <- fia_data[["tree"]] |>
+  group_by(spcd) |>
+  tally() |>
+  top_n(9, wt = n) |>
   pull(spcd)
 
-fia_data[["tree"]] %>%
-  filter(spcd %in% common_spp) %>%
-  left_join(ref_species) %>%
+fia_data[["tree"]] |>
+  filter(spcd %in% common_spp) |>
+  left_join(ref_species) |>
   ggplot(aes(x = dia, y = ht)) +
-    geom_point(alpha = 0.2) +
-    facet_wrap(~ common_name)
-
+  geom_point(alpha = 0.2) +
+  facet_wrap(~common_name)
 ```
 
 ### Plot attributes
 The tree-level data in the 'tree' table can be summarized to obtain plot-level summaries.
 ```{r plot_attributes, include = TRUE}
-plot_stats <- fia_data[["tree"]] %>%
-  group_by(plt_cn) %>%
+plot_stats <- fia_data[["tree"]] |>
+  group_by(plt_cn) |>
   summarize(
-    bapa = sum(tpa_unadj * 0.005454 * dia ^ 2, na.rm = TRUE),
+    bapa = sum(tpa_unadj * 0.005454 * dia^2, na.rm = TRUE),
     tpa = sum(tpa_unadj, na.rm = TRUE),
     qmd = sqrt(bapa / tpa / 0.005454)
-  ) %>%
+  ) |>
   full_join(
-    fia_data[["plot"]] %>% select(cn, invyr),
+    fia_data[["plot"]] |> select(cn, invyr),
     by = c("plt_cn" = "cn")
-  ) %>%
+  ) |>
   replace_na(replace = list(bapa = 0, tpa = 0, qmd = 0))
 ```
 
 The plot-level attributes could be displayed using histograms. In this example, we are looking at the distribution of basal area per acre, trees per acre, and quadratic mean diameter in plots measured in 2014 or later.
 
 ```{r histograms, include = TRUE}
-plot_stats %>%
-  filter(invyr >= 2014) %>%
+plot_stats |>
+  filter(invyr >= 2014) |>
   pivot_longer(
     cols = c("bapa", "tpa", "qmd"),
     names_to = "attribute",
     values_to = "value"
-  ) %>%
+  ) |>
   ggplot(aes(x = value)) +
   geom_histogram() +
-  facet_wrap(~ attribute, scales = "free")
-
+  facet_wrap(~attribute, scales = "free")
 ```
 
 Distributions of plot-level observations can be plotted with respect to time (`invyr`).
 
 ```{r time}
-plot_stats %>%
+plot_stats |>
   pivot_longer(
     cols = c("bapa", "tpa", "qmd"),
     names_to = "attribute",
     values_to = "value"
-  ) %>%
+  ) |>
   ggplot(aes(x = invyr, y = value)) +
   geom_point(alpha = 0.2) +
   geom_smooth() +
-  facet_wrap(~ attribute, scales = "free")
-
+  facet_wrap(~attribute, scales = "free")
 ```
 
 You may also be interested in plotting observations spatially.
 ```{r qmd_map}
-plot_stats_spatial <- plot_stats %>%
-  rename(geometry = geom) %>%
+plot_stats_spatial <- plot_stats |>
+  rename(geometry = geom) |>
   st_as_sf()
 
 ggplot() +
@@ -190,7 +185,7 @@ ggplot() +
     alpha = 0
   ) +
   geom_sf(
-    data = plot_stats_spatial %>% arrange(qmd),
+    data = plot_stats_spatial |> arrange(qmd),
     aes(color = qmd, geometry = geometry)
   ) +
   scale_color_gradientn(colors = terrain.colors(10))

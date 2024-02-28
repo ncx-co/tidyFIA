@@ -9,10 +9,10 @@ con <- DBI::dbConnect(
   password = Sys.getenv("TIDY_FIA_PASSWORD")
 )
 
-aoi <- data.frame(lat = 46.7867, lon = -92.1005) %>%
-  sf::st_as_sf(coords = c("lon", "lat"), crs = 4326) %>%
-  sf::st_transform(2163) %>%
-  sf::st_buffer(10000) %>%
+aoi <- data.frame(lat = 46.7867, lon = -92.1005) |>
+  sf::st_as_sf(coords = c("lon", "lat"), crs = 4326) |>
+  sf::st_transform(2163) |>
+  sf::st_buffer(10000) |>
   sf::st_transform(4326)
 
 

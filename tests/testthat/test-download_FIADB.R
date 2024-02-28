@@ -23,6 +23,19 @@ test_that("download_and_unzip works properly", {
 
   downloaded <- download_and_unzip(url = url, file_dir = tempdir())
   expect_length(local_file, n = 1)
+
+  # fix paths for windows
+  if (.Platform$OS.type == "windows") {
+    local_file <- normalizePath(shortPathName(local_file))
+    downloaded <- normalizePath(shortPathName(downloaded))
+  }
+
+  # fix paths for macOS
+  if (Sys.info()["sysname"] == "Darwin") {
+    local_file <- fs::path_real(local_file)
+    downloaded <- fs::path_real(downloaded)
+  }
+
   expect_identical(local_file, downloaded)
 
   bad_url <- "https://apps.fs.usda.gov/fia/datamart/CSV/ZZ_PLOT.zip"

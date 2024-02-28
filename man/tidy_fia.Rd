@@ -8,21 +8,26 @@ tidy_fia(
   states = NULL,
   aoi = NULL,
   postgis = TRUE,
-  table_names = c("plot", "subplot", "cond", "tree", "survey")
+  table_names = c("plot", "subplot", "cond", "tree", "survey"),
+  file_dir = tempdir()
 )
 }
 \arguments{
-\item{states}{a character vector of state abbreviations, ignored if \code{aoi} is
-supplied.}
+\item{states}{a character vector of state abbreviations, ignored if
+\code{aoi} is supplied.}
 
 \item{aoi}{sf object containing area of interest}
 
 \item{postgis}{logical if true, query PostGIS database instead of downloading
 csvs from FIA Datamart.}
 
-\item{table_names}{list of FIA tables to download. Tables must be identified by
-their 'Oracle Table Name' as described in the 'Index of Tables' in FIADB
+\item{table_names}{list of FIA tables to download. Tables must be identified
+by their 'Oracle Table Name' as described in the 'Index of Tables' in FIADB
 User Guide.}
+
+\item{file_dir}{path to directory in which to download CSV files from the
+Datamart. If the files are already present in this folder, the existing
+files will be used.}
 }
 \value{
 a list object containing tidy data

@@ -7,9 +7,9 @@ test_that("tidy_fia produces expected output when postgis = TRUE", {
   xy <- sf::st_point(c(-92.5267, 46.6887))
   pt <- sf::st_sfc(xy, crs = 4326)
 
-  aoi <- pt %>%
-    sf::st_sf() %>%
-    sf::st_transform(2163) %>%
+  aoi <- pt |>
+    sf::st_sf() |>
+    sf::st_transform(2163) |>
     sf::st_buffer(20000)
 
   want_tables <- c("plot", "subplot", "cond", "survey", "tree")
@@ -54,18 +54,14 @@ test_that("tidy_fia produces expected output when postgis = TRUE", {
   expect_true(
     all(fia_data[["cond"]][["plt_cn"]] %in% fia_data[["plot"]][["cn"]])
   )
-
-  expect_true(
-    all(fia_data[["survey"]][["cn"]] %in% fia_data[["plot"]][["cn"]])
-  )
 })
 
 test_that("tidy_fia produces expected output when postgis = FALSE", {
-  aoi <- spData::us_states %>%
-    dplyr::filter(NAME == "Connecticut") %>%
-    sf::st_centroid() %>%
-    sf::st_sf() %>%
-    sf::st_transform(2163) %>%
+  aoi <- spData::us_states |>
+    dplyr::filter(NAME == "Connecticut") |>
+    sf::st_centroid() |>
+    sf::st_sf() |>
+    sf::st_transform(2163) |>
     sf::st_buffer(20000)
 
   want_tables <- c("plot", "subplot", "cond", "survey", "tree")
@@ -110,10 +106,6 @@ test_that("tidy_fia produces expected output when postgis = FALSE", {
 
   expect_true(
     all(fia_data[["cond"]][["plt_cn"]] %in% fia_data[["plot"]][["cn"]])
-  )
-
-  expect_true(
-    all(fia_data[["survey"]][["cn"]] %in% fia_data[["plot"]][["cn"]])
   )
 })
 
@@ -170,10 +162,6 @@ test_that("tidy_fia produces expected output when aoi is NULL and postgis = TRUE
   expect_true(
     all(fia_data[["cond"]][["plt_cn"]] %in% fia_data[["plot"]][["cn"]])
   )
-
-  expect_true(
-    all(fia_data[["survey"]][["cn"]] %in% fia_data[["plot"]][["cn"]])
-  )
 })
 
 test_that("tidy_fia produces expected output when aoi is NULL and postgis = FALSE", {
@@ -229,9 +217,5 @@ test_that("tidy_fia produces expected output when aoi is NULL and postgis = FALS
 
   expect_true(
     all(fia_data[["cond"]][["plt_cn"]] %in% fia_data[["plot"]][["cn"]])
-  )
-
-  expect_true(
-    all(fia_data[["survey"]][["cn"]] %in% fia_data[["plot"]][["cn"]])
   )
 })

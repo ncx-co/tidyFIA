@@ -22,18 +22,18 @@ Imports:
     dplyr,
     ggplot2,
     glue,
-    magrittr,
     purrr,
     rlang,
     RPostgres,
     sf,
     spData,
-    tidyr,
     vroom
 Suggests:
+    fs,
     knitr,
     rmarkdown,
-    testthat (>= 2.1.0)
-RoxygenNote: 7.1.1
+    testthat (>= 2.1.0),
+    tidyr
+RoxygenNote: 7.2.3
 Depends: 
     R (>= 2.10)

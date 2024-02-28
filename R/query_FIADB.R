@@ -7,11 +7,11 @@
 #' @author Henry Rodman
 
 query_plot_table <- function(aoi, con) {
-  outline <- aoi %>%
-    dplyr::mutate(aoi = "aoi") %>%
-    dplyr::group_by(.data[["aoi"]]) %>%
-    dplyr::summarize() %>%
-    sf::st_geometry() %>%
+  outline <- aoi |>
+    dplyr::mutate(aoi = "aoi") |>
+    dplyr::group_by(.data[["aoi"]]) |>
+    dplyr::summarize() |>
+    sf::st_geometry() |>
     sf::st_as_text()
 
   plot_query <- glue::glue(
@@ -39,20 +39,18 @@ query_table <- function(table_name, plt_cns, con) {
   message(
     glue::glue("finding matching records in {table_name} table")
   )
-  table_call <- as.character(glue::glue("public.{table_name}"))
+
   tab <- dplyr::tbl(
     con,
-    dbplyr::in_schema(dbplyr::sql("fiadb"), dbplyr::sql(table_call))
+    dbplyr::in_schema(dbplyr::sql("public"), dbplyr::sql(table_name))
   )
 
-  plt_cn_field <- dplyr::case_when(
-    "plt_cn" %in% colnames(tab) ~ "plt_cn",
-    !"plt_cn" %in% colnames(tab) ~ "cn"
-  )
+  if ("plt_cn" %in% colnames(tab)) {
+    tab <- dplyr::filter(
+      tab,
+      .data$plt_cn %in% !!plt_cns
+    )
+  }
 
-  out <- tab %>%
-    dplyr::filter(.data[[plt_cn_field]] %in% !!plt_cns) %>%
-    dplyr::collect()
-
-  return(out)
+  dplyr::collect(tab)
 }
