@@ -12,13 +12,19 @@ FIADB that correspond to an area of interest represented by a geospatial object
 in R (class `sf`) or a list of state abbreviations (e.g. `c("CA", "NV")`).
 
 To get started you can simply run this example command to get the FIA tables for
-the state of Minnesota:
+the state of Minnesota.
 ```r
 mn_data <- tidyFIA::tidy_fia(
   states = "MN",
-  postgis = TRUE
+  postgis = FALSE,
+  file_dir = tempdir()  # replace this with any normal directory to cache downloaded files!
 )
 ```
+
+By default, state-wise zip files will be downloaded from the FIA datamartto the
+R temporary directory(`tempdir()`) but you can specify them to be downloaded 
+to any directory which makes it possible to use files downloaded during a previous
+R session.
 
 ## Database
 [NCX](https://ncx.com) is hosting a clone of FIADB data in a PostGIS database
