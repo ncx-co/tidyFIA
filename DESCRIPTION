@@ -1,12 +1,12 @@
 Package: tidyFIA
 Title: Assemble Forest Inventory and Analysis (FIA) Data for Analysis
-Version: 0.15
+Version: 0.16
 Authors@R: c(
-    person("Rodman", "Henry", , email = "henry@silviaterra.com", role = c("aut", "cre")),
-    person("Clough", "Brian", , email = "brian@silviaterra.com", role = "aut"),
-    person("Rutenbeck", "Nathan", , email = "nathan@silviaterra.com", role = "aut"),
-    person("Pond", "Nan", , email = "nan@silviaterra.com", role = "aut"),
-    person("SilviaTerra", role = c("cph", "fnd"))
+    person("Rodman", "Henry", , email = "henry@ncx.com", role = c("aut", "cre")),
+    person("Clough", "Brian", , role = "aut"),
+    person("Rutenbeck", "Nathan", , role = "aut"),
+    person("Pond", "Nan", , role = "aut"),
+    person("NCX", role = c("cph", "fnd"))
     )
 Description: A simple user interface for downloading and importing FIA data from
     FIADB (https://apps.fs.usda.gov/fia/datamart/CSV/datamart_csv.html) into R
@@ -22,18 +22,18 @@ Imports:
     dplyr,
     ggplot2,
     glue,
-    magrittr,
     purrr,
     rlang,
     RPostgres,
     sf,
     spData,
-    tidyr,
     vroom
 Suggests:
+    fs,
     knitr,
     rmarkdown,
-    testthat (>= 2.1.0)
-RoxygenNote: 7.1.1
+    testthat (>= 2.1.0),
+    tidyr
+RoxygenNote: 7.2.3
 Depends: 
     R (>= 2.10)
